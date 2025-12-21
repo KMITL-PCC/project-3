@@ -8,9 +8,10 @@ services:
     # กำหนด port ที่ใช้งาน
     # ports: "3000:3000" เป็นตัวอย่าง
     ports:
-      - "3000:3000"
+      - "${PORT}:${PORT}"
     environment:
-      - NODE_ENV= ${NODE_ENV}
+      - NODE_ENV=${NODE_ENV}
+      - PORT=${PORT}
       # รอทีม DataBase
       # เตรียมดึงจากไฟล์ .env
       # - DB_HOST=
