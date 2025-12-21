@@ -6,11 +6,10 @@ services:
     # ทำการ Restart ทุกครั้งใหม่ให้อัตโนมัติเมื่อ App Crash
     restart: always
     # กำหนด port ที่ใช้งาน
-    # ports: "3000:3000" เป็นตัวอย่าง
     ports:
-      - "3000:3000"
+      - "${PORT}:${PORT}"
     environment:
-      - NODE_ENV= ${NODE_ENV}
+      - NODE_ENV=production
       # รอทีม DataBase
       # เตรียมดึงจากไฟล์ .env
       # - DB_HOST=
@@ -41,4 +40,4 @@ services:
   #     - backend
 
 # volumes:
-#   database:แล้
+#   database:

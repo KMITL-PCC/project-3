@@ -35,3 +35,6 @@ out/
 coverage/
 *.tgz
 /src/generated/prisma
+
+# Docker
+docker-compose.override.yml

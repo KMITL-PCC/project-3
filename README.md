@@ -1,12 +1,20 @@
-# Docker
+# Docker Setup Guide
 
 
 ## How to Setup Docker-compose (For Developer and Server)
 
-### สร้างไฟล์ override สำหรับ Dev (เพื่อให้แก้โค้ดได้)
-    - สำหรับ Dev ให้ Copy ไฟล์ `docker-compose.override.example.yml` แล้วเปลี่ยนชื่อไฟล์เป็น `docker-compose.override.yml`
-    - สำหรับ Server ให้ใช้แค่ `docker-compose.yml`
+### 1. สำหรับ Developer
+เราจะใช้ไฟล์ Override เพื่อให้สามารถแก้ไขโค้ดได้ทันที (Hot Reload)
+1. Copy ไฟล์ `docker-compose.override.example.yml`
+2. เปลี่ยนชื่อเป็น `docker-compose.override.yml`
+3. รันคำสั่ง: `docker compose up -d` (Docker จะอ่านทั้งไฟล์หลักและไฟล์ Override ให้อัตโนมัติ)
+
+### 2. สำหรับ Server
+บน Server เราต้องการความนิ่งและสภาพแวดล้อมที่เหมือนกันทุกครั้ง
+1. **ไม่ต้องสร้าง** ไฟล์ `docker-compose.override.yml`
+2. รันคำสั่งโดยระบุไฟล์หลักอย่างเดียวเพื่อความชัวร์:
+   `docker compose -f docker-compose.yml up -d`
 
 ## 🚨🚨🚨 คำเตือน 🚨🚨🚨
-    - ห้าม commit docker-compose.override.yml เด็ดขาด ให้ใส่ docker-compose.override.yml
-    - Server ให้ใช้ docker-compose.yml แค่ไฟล์เดียวไม่ต้องใช้ docker-compose.override.yml
+    - commit `docker-compose.override.yml` ให้เพิ่มชื่อไฟล์นี้ลงใน `.gitignore` เสมอ
+    - Server ให้ใช้ docker-compose.yml แค่ไฟล์เดียว ห้ามมี override ติดไปด้วย
