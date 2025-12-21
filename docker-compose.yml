@@ -1,0 +1,44 @@
+services:
+  backend:
+    build: .
+    # ตั้งชื่อ Container
+    container_name: app-backend
+    # ทำการ Restart ทุกครั้งใหม่ให้อัตโนมัติเมื่อ App Crash
+    restart: always
+    # กำหนด port ที่ใช้งาน
+    # ports: "3000:3000" เป็นตัวอย่าง
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV= ${NODE_ENV}
+      # รอทีม DataBase
+      # เตรียมดึงจากไฟล์ .env
+      # - DB_HOST=
+      # - DB_USER=
+      # - DB_PASS=
+    # depends_on:
+    #   - database
+  
+  # รอทีม database
+  # database:
+  #   image:
+  #   container_name:
+  #   restart: always
+  #   environment:
+  #     - DB_ROOT_NAME=
+  #     - DB_ROOT_PASS=
+  #   volumes:
+  #     - 
+
+  # รอทีม frontend
+  # frontend:
+  #   build: ./frontend
+  #   container_name:
+  #   restart: always
+  #   ports:
+  #     - ""
+  #   depends_on:
+  #     - backend
+
+# volumes:
+#   database:แล้
