@@ -14,10 +14,10 @@ datasource db {
 }
 
 model User {
-  id         Int          @id @default(autoincrement())
-  username   String       @unique @db.VarChar(50)
-  password   String       @db.VarChar(255)
-  lineUid    String?      @unique @map("line_uid") @db.VarChar(100)
+  id       Int     @id @default(autoincrement())
+  username String  @unique @db.VarChar(50)
+  password String  @db.VarChar(255)
+  lineUid  String? @unique @map("line_uid") @db.VarChar(100)
 
   attendances Attendance[]
 
@@ -25,57 +25,57 @@ model User {
 }
 
 model Subject {
-  id       Int            @id @default(autoincrement())
-  name     String         @db.VarChar(255)
-  period   String?        @db.VarChar(50)
+  id     Int     @id @default(autoincrement())
+  name   String  @db.VarChar(255)
+  period String? @db.VarChar(50)
 
   sessions ClassSession[]
 }
 
 model Room {
-  id       Int          @id @default(autoincrement())
-  roomName String       @map("room_name") @db.VarChar(100)
+  id       Int    @id @default(autoincrement())
+  roomName String @map("room_name") @db.VarChar(100)
 
   devices  DeviceIoT[]
   sessions ClassSession[]
 }
 
 model DeviceIoT {
-  id        Int          @id @default(autoincrement())
-  roomId    Int          @map("room_id")
-  deviceName String?     @db.VarChar(100)
+  id         Int     @id @default(autoincrement())
+  roomId     Int     @map("room_id")
+  deviceName String? @db.VarChar(100)
 
-  room      Room         @relation(fields: [roomId], references: [id])
-  sessions  ClassSession[]
+  room     Room           @relation(fields: [roomId], references: [id])
+  sessions ClassSession[]
 }
 
 model ClassSession {
-  id        Int        @id @default(autoincrement())
-  subjectId Int        @map("subject_id")
-  roomId    Int        @map("room_id")
-  deviceId  Int        @map("device_id")
+  id        Int @id @default(autoincrement())
+  subjectId Int @map("subject_id")
+  roomId    Int @map("room_id")
+  deviceId  Int @map("device_id")
 
-  qrToken   String     @unique @map("qr_token") @db.VarChar(255)
-  startTime DateTime   @map("start_time")
-  endTime   DateTime   @map("end_time")
+  qrToken   String   @unique @map("qr_token") @db.VarChar(255)
+  startTime DateTime @map("start_time")
+  endTime   DateTime @map("end_time")
 
-  subject   Subject    @relation(fields: [subjectId], references: [id])
-  room      Room       @relation(fields: [roomId], references: [id])
-  device    DeviceIoT  @relation(fields: [deviceId], references: [id])
+  subject Subject   @relation(fields: [subjectId], references: [id])
+  room    Room      @relation(fields: [roomId], references: [id])
+  device  DeviceIoT @relation(fields: [deviceId], references: [id])
 
   attendances Attendance[]
 }
 
 model Attendance {
-  id              Int          @id @default(autoincrement())
-  userId          Int          @map("user_id")
-  classSessionId  Int          @map("class_session_id")
+  id             Int @id @default(autoincrement())
+  userId         Int @map("user_id")
+  classSessionId Int @map("class_session_id")
 
-  checkinTime     DateTime     @map("checkin_time")
-  status          String?      @db.VarChar(20)
+  checkinTime DateTime @map("checkin_time")
+  status      String?  @db.VarChar(20)
 
-  user            User         @relation(fields: [userId], references: [id])
-  classSession    ClassSession @relation(fields: [classSessionId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+  classSession ClassSession @relation(fields: [classSessionId], references: [id])
 
   @@unique([userId, classSessionId])
 }
