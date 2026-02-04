@@ -1,36 +1,36 @@
 {
-  "name": "project-3",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1" ,
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/server.ts",
-    "lint": "eslint 'src/**/*.ts'",
-    "prisma:pull": "npx prisma db pull"
-  },
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "@types/express": "^5.0.6",
-    "@types/node": "^25.0.3",
-    "@types/pg": "^8.16.0",
-    "dotenv": "^17.2.3",
-    "eslint": "^9.39.2",
-    "express": "^5.2.1",
-    "install": "^0.13.0",
-    "nodemon": "^3.1.11",
-    "npm": "^11.7.0",
-    "prettier": "^3.7.4",
-    "prisma": "^7.2.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
-  },
-  "dependencies": {
-    "@prisma/adapter-pg": "^7.2.0",
-    "@prisma/client": "^7.2.0",
-    "pg": "^8.16.3"
-  }
+	"name": "project-3",
+	"version": "1.0.0",
+	"main": "src/server.ts",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"build": "tsc",
+		"start": "node dist/server.js",
+		"dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/server.ts",
+		"lint": "eslint 'src/**/*.ts'",
+		"prisma:pull": "npx prisma db pull"
+	},
+	"author": "",
+	"license": "ISC",
+	"description": "",
+	"devDependencies": {
+		"@types/express": "^5.0.6",
+		"@types/node": "^25.0.3",
+		"@types/pg": "^8.16.0",
+		"dotenv": "^17.2.3",
+		"eslint": "^9.39.2",
+		"express": "^5.2.1",
+		"install": "^0.13.0",
+		"nodemon": "^3.1.11",
+		"npm": "^11.7.0",
+		"prettier": "^3.7.4",
+		"prisma": "^7.2.0",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.9.3"
+	},
+	"dependencies": {
+		"@prisma/adapter-pg": "^7.2.0",
+		"@prisma/client": "^7.2.0",
+		"pg": "^8.16.3"
+	}
 }

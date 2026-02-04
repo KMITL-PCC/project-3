@@ -1,6 +1,7 @@
-import 'dotenv/config'
+import "dotenv/config";
 // Import the express in typescript file
-import express from 'express';
+import express from "express";
+import router from "./routes/router";
 
 // Initialize the express engine
 const app = express();
@@ -9,14 +10,11 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Handling '/' Request
-app.get('/', (req, res) => {
-    res.json({
-        message: "Hi"
-    })
-});
+
+app.use(router);
 
 // Server setup
 app.listen(port, () => {
-    console.log(`TypeScript with Express 
+	console.log(`TypeScript with Express 
          http://localhost:${port}/`);
 });
