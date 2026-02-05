@@ -32,9 +32,9 @@ jobs:
 
           cd /home/githubactions/deploy-year3
 
-          docker-compose pull backend
+          docker compose pull backend
 
-          docker-compose up -d backend
+          docker compose up -d backend
 
           # delete old unused images
           docker image prune -f
