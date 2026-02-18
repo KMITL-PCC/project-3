@@ -3,6 +3,7 @@ import dashboardRouter from "./dashboard.router";
 import usersRouter from "./users.router";
 import roomsRouter from "./rooms.router";
 import authRouter from "./auth.router";
+import allRouter from "./all.router";
 
 const router = express.Router();
 
@@ -14,5 +15,6 @@ dashboardRouter(router);
 usersRouter(router);
 roomsRouter(router);
 authRouter(router);
+allRouter(router);
 
 export default router;
