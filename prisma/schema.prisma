@@ -18,10 +18,12 @@ model User {
   username String  @unique @db.VarChar(50)
   password String  @db.VarChar(255)
   lineUid  String? @unique @map("line_uid") @db.VarChar(100)
+  role      String       @db.VarChar(20) // admin | user
+  img       String?      @db.Text
 
   attendances Attendance[]
 
-  @@map("users")
+  @@map("user")
 }
 
 model Subject {
@@ -30,23 +32,30 @@ model Subject {
   period String? @db.VarChar(50)
 
   sessions ClassSession[]
+
+  @@map("subject")
 }
 
 model Room {
   id       Int    @id @default(autoincrement())
   roomName String @map("room_name") @db.VarChar(100)
+  maxStudents Int @map("max_students")
 
   devices  DeviceIoT[]
   sessions ClassSession[]
+
+  @@map("room")
 }
 
 model DeviceIoT {
   id         Int     @id @default(autoincrement())
   roomId     Int     @map("room_id")
-  deviceName String? @db.VarChar(100)
+  deviceName String? @db.VarChar(100) @map("device_name")
 
   room     Room           @relation(fields: [roomId], references: [id])
   sessions ClassSession[]
+
+  @@map("device_iot")
 }
 
 model ClassSession {
@@ -64,6 +73,8 @@ model ClassSession {
   device  DeviceIoT @relation(fields: [deviceId], references: [id])
 
   attendances Attendance[]
+
+  @@map("class_session")
 }
 
 model Attendance {
@@ -72,10 +83,12 @@ model Attendance {
   classSessionId Int @map("class_session_id")
 
   checkinTime DateTime @map("checkin_time")
+  checkoutTime DateTime @map("checkout_time")
   status      String?  @db.VarChar(20)
 
   user         User         @relation(fields: [userId], references: [id])
   classSession ClassSession @relation(fields: [classSessionId], references: [id])
 
   @@unique([userId, classSessionId])
+  @@map("attendance")
 }
