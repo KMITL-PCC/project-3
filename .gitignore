@@ -25,6 +25,7 @@ out/
 
 # IDEs
 .vscode/
+.cursor/
 .idea/
 *.suo
 *.ntvs*
