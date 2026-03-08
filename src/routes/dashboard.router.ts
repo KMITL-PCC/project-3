@@ -1,11 +1,13 @@
-import type { Router } from "express";
-
+import express from "express";
 import dashboardController from "../controllers/dashboard.controller";
+import dashboardMiddleware from "../middleware/dashboard.middleware";
 
-const dashboardRouter = (router: Router) => {
-	router.get("/dashboard", (req, res) => {
-		dashboardController.handleGetStats(req, res);
-	});
-};
+const router = express.Router();
 
-export default dashboardRouter;
+router.use(dashboardMiddleware);
+
+router.get("/:roomId", dashboardController.handleGetByRoomId);
+
+// router.get("/stats/:roomId", dashboardController.handleGetStatsByRoomId);
+
+export default router;

@@ -14,151 +14,71 @@ datasource db {
 }
 
 model User {
-  id       Int     @id @default(autoincrement())
-  username String  @unique @db.VarChar(50)
-  password String  @db.VarChar(255)
-  lineUid  String? @unique @map("line_uid") @db.VarChar(100)
+  id        Int          @id @default(autoincrement())
+  username  String       @unique @db.VarChar(50)
+  password  String       @db.VarChar(255)
+  lineUid   String?      @unique @map("line_uid") @db.VarChar(100)
   role      String       @db.VarChar(20) // admin | user
   img       String?      @db.Text
 
-  createdAt DateTime @default(now())
-
   attendances Attendance[]
 
-  @@map("user")
+  @@map("users")
 }
 
 model Subject {
-  id     Int     @id @default(autoincrement())
-  name   String  @db.VarChar(255)
-  period String? @db.VarChar(50)
+  id       Int            @id @default(autoincrement())
+  name     String         @db.VarChar(255)
+  period   String?        @db.VarChar(50)
 
   sessions ClassSession[]
-
-  @@map("subject")
 }
 
 model Room {
-  id       Int    @id @default(autoincrement())
-  roomName String @map("room_name") @db.VarChar(100)
-  maxStudents Int @map("max_students")
+  id        Int          @id @default(autoincrement())
+  roomName  String       @map("room_name") @db.VarChar(100)
 
-  devices  DeviceIoT[]
-  sessions ClassSession[]
-
-  @@map("room")
+  device    DeviceIoT?
+  sessions  ClassSession[]
 }
 
 model DeviceIoT {
-  id         Int     @id @default(autoincrement())
-  roomId     Int     @map("room_id")
-  deviceName String? @db.VarChar(100) @map("device_name")
+  id          Int     @id @default(autoincrement())
+  roomId      Int     @unique @map("room_id")
+  deviceName  String? @map("device_name") @db.VarChar(100)
 
-  room     Room           @relation(fields: [roomId], references: [id])
-  sessions ClassSession[]
-
-  @@map("device_iot")
+  room        Room    @relation(fields: [roomId], references: [id])
+  sessions    ClassSession[]
 }
 
 model ClassSession {
-  id        Int @id @default(autoincrement())
-  subjectId Int @map("subject_id")
-  roomId    Int @map("room_id")
-  deviceId  Int @map("device_id")
+  id           Int        @id @default(autoincrement())
+  subjectId    Int        @map("subject_id")
+  roomId       Int        @map("room_id")
+  deviceId     Int        @map("device_id")
 
-  qrToken   String   @unique @map("qr_token") @db.VarChar(255)
-  startTime DateTime @map("start_time")
-  endTime   DateTime @map("end_time")
+  qrToken      String     @unique @map("qr_token") @db.VarChar(255)
+  startTime    DateTime   @map("start_time")
+  endTime      DateTime   @map("end_time")
+  maxStudents  Int        @map("max_students")
 
-  subject Subject   @relation(fields: [subjectId], references: [id])
-  room    Room      @relation(fields: [roomId], references: [id])
-  device  DeviceIoT @relation(fields: [deviceId], references: [id])
+  subject      Subject    @relation(fields: [subjectId], references: [id])
+  room         Room       @relation(fields: [roomId], references: [id])
+  device       DeviceIoT  @relation(fields: [deviceId], references: [id])
 
-  attendances Attendance[]
-
-  @@map("class_session")
+  attendances  Attendance[]
 }
 
 model Attendance {
-  id             Int @id @default(autoincrement())
-  userId         Int @map("user_id")
-  classSessionId Int @map("class_session_id")
+  id              Int          @id @default(autoincrement())
+  userId          Int          @map("user_id")
+  classSessionId  Int          @map("class_session_id")
 
-  checkinTime DateTime @map("checkin_time")
-  checkoutTime DateTime @map("checkout_time")
-  status      String?  @db.VarChar(20)
+  checkinTime     DateTime     @map("checkin_time")
+  status          String?      @db.VarChar(20)
 
-  user         User         @relation(fields: [userId], references: [id])
-  classSession ClassSession @relation(fields: [classSessionId], references: [id])
+  user            User         @relation(fields: [userId], references: [id])
+  classSession    ClassSession @relation(fields: [classSessionId], references: [id])
 
   @@unique([userId, classSessionId])
-  @@map("attendance")
-}
-
-model Zone {
-  id       String   @id @default(uuid())
-  name     String   @unique
-  devices  Device[]
-}
-
-model Device {
-  id           String   @id @default(uuid())
-  macAddress   String   @unique
-  deviceName   String?
-  roomNumber   String?
-  ipAddress    String?
-  status       String   @default("PENDING") // PENDING, ACTIVE, DISABLED
-  lastSeen     DateTime @default(now())
-  zoneId       String?
-  zone         Zone?    @relation(fields: [zoneId], references: [id])
-  adId         String?
-  ad           Ad?      @relation(fields: [adId], references: [id])
-  activities   Activity[]
-  lastCommand  String?
-}
-
-model Ad {
-  id        String   @id @default(uuid())
-  name      String
-  url       String
-  type      String   @default("IMAGE") // IMAGE, VIDEO
-  devices   Device[]
-  activities Activity[]
-  createdAt DateTime @default(now())
-}
-
-model Activity {
-  id          String   @id @default(uuid())
-  devices     Device[]
-  title       String
-  description String?
-  imageUrl    String?
-  startTime   DateTime
-  endTime     DateTime
-  adId        String?
-  ad          Ad?      @relation(fields: [adId], references: [id])
-  qrCodeId    String?
-  qrCode      QrCode?  @relation(fields: [qrCodeId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model AuditLog {
-  id        Int      @id @default(autoincrement())
-  userId    String
-  username  String
-  action    String   // DEVICE_CREATED, DEVICE_UPDATED, DEVICE_DELETED, ZONE_CREATED, etc.
-  targetId  String
-  details   Json?
-  createdAt DateTime @default(now())
-}
-
-model QrCode {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  type        String   @default("GENERATED") // GENERATED, IMAGE_URL
-  data        String   // The URL to generate QR from OR the Image URL
-  createdAt   DateTime @default(now())
-  activities  Activity[]
 }

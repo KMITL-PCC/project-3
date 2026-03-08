@@ -10,9 +10,9 @@ router.get("/", (req, res) => {
 	res.send("Hello World");
 });
 
-dashboardRouter(router);
-usersRouter(router);
-roomsRouter(router);
-authRouter(router);
+router.use("/dashboard", dashboardRouter);
+router.use("/users", usersRouter);
+router.use("/rooms", roomsRouter);
+router.use("/auth", authRouter);
 
 export default router;
