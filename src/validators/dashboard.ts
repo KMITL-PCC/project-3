@@ -1,7 +1,7 @@
 import z from "zod";
 
 const dashboardRequestSchema = z.object({
-  roomId: z.coerce.number(),
+  roomCode: z.string(),
   startDate: z.date(),
   endDate: z.date(),
   page: z.coerce.number().default(1),
