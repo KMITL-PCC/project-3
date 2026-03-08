@@ -1,4 +1,4 @@
-name : Build & Deploy Backend
+name : Build & Push Backend
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
     # build and push docker image to docker hub
@@ -26,16 +26,10 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/backendyear3:latest
 
-    # deploy
-      - name: Deploy to server
-        run: |
-
-          cd /home/githubactions/deploy-year3
-
-          docker compose pull backend
-
-          docker compose up -d backend
-
-          # delete old unused images
-          docker image prune -f
-
+    # trigger deployment workflow
+      - name: Trigger Deployment Workflow
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.DEPLOY_PAT }}
+          repo: https://github.com/KMITL-PCC/deploy-year3
+          event-type: update-backend  
