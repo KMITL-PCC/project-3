@@ -18,6 +18,15 @@ services:
     # depends_on:
     #   - database
   
+  redis:
+    image: redis:7
+    container_name: app-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
   # รอทีม database
   # database:
   #   image:
@@ -41,3 +50,5 @@ services:
 
 # volumes:
 #   database:
+volumes:
+  redis_data:
