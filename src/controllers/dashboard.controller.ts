@@ -7,14 +7,14 @@ import z from "zod";
 const dashboardController = {
   handleGetByRoomId: async (req: Request, res: Response) => {
     try {
-      const { roomId } = req.params;
+      const { roomCode } = req.params;
       const { startDate: sd, endDate: ed, page, limit } = req.query;
 
       const startDate = sd ? new Date(sd as string) : new Date();
       const endDate = ed ? new Date(ed as string) : new Date();
 
       const isQueryValid = dashboardRequestSchema.safeParse({
-        roomId,
+        roomCode,
         startDate,
         endDate,
         page,
@@ -36,7 +36,7 @@ const dashboardController = {
         limit: perPage,
         page: currentPage,
       } = await dashboardService.getByRoomId(
-        isQueryValid.data.roomId,
+        isQueryValid.data.roomCode,
         isQueryValid.data.startDate,
         isQueryValid.data.endDate,
         isQueryValid.data.page,

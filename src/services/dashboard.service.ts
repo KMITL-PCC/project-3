@@ -27,7 +27,7 @@ import { prisma } from "../lib/prisma";
 
 const dashboardService = {
   getByRoomId: async (
-    roomId: number,
+    roomCode: string,
     startDate: Date,
     endDate: Date,
     page: number,
@@ -37,42 +37,39 @@ const dashboardService = {
     const parsedEndDate = `${formatDate(endDate)}T23:59:59.999Z`;
 
     const whereClause = {
-      classSession: {
-        roomId: roomId,
-      },
-      checkinTime: {
+      room_code: roomCode,
+      check_in: {
         gte: parsedStartDate,
         lte: parsedEndDate,
       },
     };
 
-    prisma.attendance;
-
     const [data, attendancesCount] = await Promise.all([
-      prisma.attendance.findMany({
+      prisma.checkin.findMany({
         where: whereClause,
         select: {
-          checkinTime: true,
-          // checkoutTime: true, ไม่มีใน Database
-          user: {
+          check_in: true,
+          student: {
             select: {
-              id: true,
-              username: true,
+              national_id: true,
+              fname: true,
+              lname: true,
             },
           },
         },
         take: limit,
         skip: (page - 1) * limit,
       }),
-      prisma.attendance.count(),
+      prisma.checkin.count({ where: whereClause }),
     ]);
 
     const pageCount = Math.ceil(attendancesCount / limit);
 
     const attendances = data.map((attendance) => ({
-      studentId: attendance.user.id,
-      username: attendance.user.username,
-      checkinTime: attendance.checkinTime,
+      studentId: attendance.student.national_id,
+      fname: attendance.student.fname,
+      lname: attendance.student.lname,
+      checkinTime: attendance.check_in,
       // checkoutTime: attendance.checkoutTime,
     }));
 
