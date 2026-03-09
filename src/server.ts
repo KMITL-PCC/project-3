@@ -6,6 +6,8 @@ import router from "./routes/router";
 // Initialize the express engine
 const app = express();
 
+app.use(express.json())
+
 // Take a port 3000 for running server.
 const port: number = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 

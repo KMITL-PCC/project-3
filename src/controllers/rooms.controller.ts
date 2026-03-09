@@ -21,6 +21,25 @@ const roomsController = {
 		const result = roomsService.delete(req.params.id);
 		res.send(result);
 	},
+	handleGenerateQr: async (req: any, res: any) => {
+		try {
+			const { roomId, deviceId } = req.body;
+
+			if (!roomId || !deviceId) {
+				return res.status(400).json({ error: "Missing roomId or deviceId" });
+			}
+
+			const result = await roomsService.generateQr((roomId), (deviceId));
+			return res.status(200).json({ ...result });
+
+		} catch (error: any) {
+			if (error.message === "SESSION_NOT_FOUND") {
+				return res.status(404).json({ error: "Class session not found" });
+			}
+			console.error(error);
+			return res.status(500).json({ error: "Internal Server Error" });
+		}
+	}
 };
 
 export default roomsController;
