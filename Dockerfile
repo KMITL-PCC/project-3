@@ -3,9 +3,10 @@ FROM node:24-alpine
 
 WORKDIR /app
 
+RUN echo "Cache bust 2"
 COPY package*.json ./
 
-RUN npm install && npm cache clean --force
+RUN npm install && npm install qrcode @types/qrcode && npm cache clean --force
 
 COPY prisma ./prisma
 RUN npx prisma generate
