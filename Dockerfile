@@ -7,11 +7,9 @@ COPY package*.json ./
 
 RUN npm install && npm cache clean --force
 
-COPY prisma ./prisma
+COPY . .
 
 RUN npx prisma generate
-
-COPY . .
 
 RUN npm run build
 
@@ -19,4 +17,4 @@ USER node
 
 EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "start"]

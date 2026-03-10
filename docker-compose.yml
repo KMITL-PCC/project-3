@@ -10,6 +10,8 @@ services:
       - "${PORT}:${PORT}"
     environment:
       - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - PORT=${PORT}
       # รอทีม DataBase
       # เตรียมดึงจากไฟล์ .env
       # - DB_HOST=
@@ -17,7 +19,7 @@ services:
       # - DB_PASS=
     # depends_on:
     #   - database
-  
+
   # รอทีม database
   # database:
   #   image:
@@ -27,7 +29,7 @@ services:
   #     - DB_ROOT_NAME=
   #     - DB_ROOT_PASS=
   #   volumes:
-  #     - 
+  #     -
 
   # รอทีม frontend
   # frontend:
