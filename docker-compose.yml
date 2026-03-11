@@ -8,6 +8,8 @@ services:
     # กำหนด port ที่ใช้งาน
     ports:
       - "${PORT}:${PORT}"
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
       # รอทีม DataBase
