@@ -1,57 +1,111 @@
+import { Prisma } from "../../prisma/generated/prisma/client";
 import { formatDate } from "../lib/format-date";
 import { prisma } from "../lib/prisma";
 
-// const TIME_PERIODS = [
-// 	{ label: "00:00 - 11:59", startHour: 0, endHour: 11, endMinute: 59 },
-// 	{ label: "12:00 - 16:00", startHour: 12, endHour: 16, endMinute: 0 },
-// 	{ label: "17:00 - 23:59", startHour: 17, endHour: 23, endMinute: 59 },
-// ];
-
-// function getTimePeriodIndex(date: Date): number {
-// 	const hour = date.getHours();
-// 	const minute = date.getMinutes();
-
-// 	for (let i = 0; i < TIME_PERIODS.length; i++) {
-// 		const period = TIME_PERIODS[i];
-// 		const startMatch = hour >= period.startHour;
-// 		const endMatch =
-// 			hour < period.endHour ||
-// 			(hour === period.endHour && minute <= period.endMinute);
-
-// 		if (startMatch && endMatch) {
-// 			return i;
-// 		}
-// 	}
-// 	return -1;
-// }
-
 const dashboardService = {
+  // getByRoomId: async (
+  //   roomCode: string,
+  //   startDate: Date,
+  //   endDate: Date,
+  //   page: number,
+  //   limit: number,
+  // ) => {
+  //   const parsedStartDate = `${formatDate(startDate)}T00:00:00.000Z`;
+  //   const parsedEndDate = `${formatDate(endDate)}T23:59:59.999Z`;
+
+  //   const whereClause = {
+  //     room_code: roomCode,
+  //     check_in: {
+  //       gte: parsedStartDate,
+  //       lte: parsedEndDate,
+  //     },
+  //   };
+
+  //   const [data, attendancesCount] = await Promise.all([
+  //     prisma.checkin.findMany({
+  //       where: whereClause,
+  //       select: {
+  //         check_in: true,
+  //         check_out: true,
+  //         student_id: true,
+  //         users: {
+  //           select: {
+  //             fname: true,
+  //             lname: true,
+  //           },
+  //         },
+  //       },
+  //       take: limit,
+  //       skip: (page - 1) * limit,
+  //     }),
+  //     prisma.checkin.count({ where: whereClause }),
+  //   ]);
+
+  //   const pageCount = Math.ceil(attendancesCount / limit);
+
+  //   const attendances = data.map((attendance) => ({
+  //     studentId: attendance.student_id,
+  //     fname: attendance.users.fname,
+  //     lname: attendance.users.lname,
+  //     checkinTime: attendance.check_in,
+  //     checkoutTime: attendance.check_out,
+  //   }));
+
+  //   return { attendances, attendancesCount, pageCount, limit, page };
+  // },
   getByRoomId: async (
     roomCode: string,
-    startDate: Date,
-    endDate: Date,
+    date: Date,
+    search: string | undefined,
     page: number,
     limit: number,
   ) => {
-    const parsedStartDate = `${formatDate(startDate)}T00:00:00.000Z`;
-    const parsedEndDate = `${formatDate(endDate)}T23:59:59.999Z`;
+    const start = `${formatDate(date)}T00:00:00.000Z`;
+    const end = `${formatDate(date)}T23:59:59.999Z`;
 
-    const whereClause = {
-      room_code: roomCode,
-      check_in: {
-        gte: parsedStartDate,
-        lte: parsedEndDate,
-      },
-    };
+    console.log(start, end);
+
+    const whereClause = search
+      ? {
+          room_code: roomCode,
+          OR: [
+            {
+              student_id: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              users: {
+                fname: {
+                  contains: search,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+            },
+          ],
+          check_in: {
+            gte: start,
+            lte: end,
+          },
+        }
+      : {
+          room_code: roomCode,
+          check_in: {
+            gte: start,
+            lte: end,
+          },
+        };
 
     const [data, attendancesCount] = await Promise.all([
       prisma.checkin.findMany({
         where: whereClause,
         select: {
           check_in: true,
-          student: {
+          check_out: true,
+          student_id: true,
+          users: {
             select: {
-              national_id: true,
               fname: true,
               lname: true,
             },
@@ -66,75 +120,15 @@ const dashboardService = {
     const pageCount = Math.ceil(attendancesCount / limit);
 
     const attendances = data.map((attendance) => ({
-      studentId: attendance.student.national_id,
-      fname: attendance.student.fname,
-      lname: attendance.student.lname,
+      studentId: attendance.student_id,
+      fname: attendance.users.fname,
+      lname: attendance.users.lname,
       checkinTime: attendance.check_in,
-      // checkoutTime: attendance.checkoutTime,
+      checkoutTime: attendance.check_out,
     }));
 
     return { attendances, attendancesCount, pageCount, limit, page };
   },
-
-  // getStatsByRoomId: async (roomId: number, date: Date) => {
-  // 	const year = date.getFullYear();
-  // 	const month = String(date.getMonth() + 1).padStart(2, "0");
-  // 	const day = String(date.getDate()).padStart(2, "0");
-
-  // 	const start = `${year}-${month}-${day}T00:00:00.000Z`;
-  // 	const end = `${year}-${month}-${day}T23:59:59.999Z`;
-
-  // 	const [attendances, totalStudents] = await Promise.all([
-  // 		prisma.attendance.findMany({
-  // 			where: {
-  // 				classSession: {
-  // 					roomId: roomId,
-  // 				},
-  // 				checkinTime: {
-  // 					gte: start,
-  // 					lte: end,
-  // 				},
-  // 			},
-  // 			select: {
-  // 				checkinTime: true,
-  // 				checkoutTime: true,
-  // 			},
-  // 		}),
-  // 		prisma.room.findUnique({
-  // 			where: { id: roomId },
-  // 			select: { maxStudents: true },
-  // 		}),
-  // 	]);
-
-  // 	const timeInCounts = TIME_PERIODS.map(() => 0);
-  // 	const timeOutCounts = TIME_PERIODS.map(() => 0);
-
-  // 	for (const attendance of attendances) {
-  // 		const checkinIndex = getTimePeriodIndex(attendance.checkinTime);
-  // 		if (checkinIndex !== -1) {
-  // 			timeInCounts[checkinIndex]++;
-  // 		}
-
-  // 		if (attendance.checkoutTime) {
-  // 			const checkoutIndex = getTimePeriodIndex(attendance.checkoutTime);
-  // 			if (checkoutIndex !== -1) {
-  // 				timeOutCounts[checkoutIndex]++;
-  // 			}
-  // 		}
-  // 	}
-
-  // 	return {
-  // 		totalStudents: totalStudents?.maxStudents ?? 0,
-  // 		timeIn: TIME_PERIODS.map((period, index) => ({
-  // 			label: period.label,
-  // 			count: timeInCounts[index],
-  // 		})),
-  // 		timeOut: TIME_PERIODS.map((period, index) => ({
-  // 			label: period.label,
-  // 			count: timeOutCounts[index],
-  // 		})),
-  // 	};
-  // },
 };
 
 export default dashboardService;

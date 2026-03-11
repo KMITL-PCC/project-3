@@ -6,8 +6,8 @@ const router = express.Router();
 
 router.use(dashboardMiddleware);
 
-router.get("/:roomId", dashboardController.handleGetByRoomId);
+router.get("/", (req, res) => res.send("Dashboard Route"));
 
-// router.get("/stats/:roomId", dashboardController.handleGetStatsByRoomId);
+router.get("/:roomCode", dashboardController.handleGetByRoomId);
 
 export default router;
