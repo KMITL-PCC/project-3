@@ -1,0 +1,9 @@
+services:
+  backend:
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=${DATABASE_URL}
+      - PORT=${PORT}
+    volumes:
+      - .:/app
+      - /app/node_modules

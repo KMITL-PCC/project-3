@@ -77,6 +77,26 @@ model Zone {
   Device Device[]
 }
 
+model building {
+  building_code String @id @db.VarChar(20)
+  building_name String @db.VarChar(200)
+  room          room[]
+}
+
+model checkin {
+  id         Int       @id @default(autoincrement())
+  student_id String    @db.VarChar(8)
+  room_code  String    @db.VarChar(10)
+  check_in   DateTime?
+  check_out  DateTime?
+  room       room      @relation(fields: [room_code], references: [room_code])
+  users      users     @relation(fields: [student_id], references: [StudentId])
+
+  @@index([check_in])
+  @@index([room_code])
+  @@index([student_id])
+}
+
 model class_session {
   id           Int      @id @default(autoincrement())
   subject_id   Int
@@ -86,7 +106,7 @@ model class_session {
   start_time   DateTime
   end_time     DateTime
   max_students Int
-  device_iot   Device   @relation(fields: [device_id], references: [id])
+  Device       Device   @relation(fields: [device_id], references: [id])
   room         room     @relation(fields: [room_id], references: [room_code])
 }
 
@@ -102,41 +122,36 @@ model room {
   building      building?       @relation(fields: [building_code], references: [building_code])
 }
 
-model building {
-  building_code String @id @db.VarChar(20)
-  building_name String @db.VarChar(200)
-  room          room[]
-}
-
-model checkin {
-  id          Int       @id @default(autoincrement())
-  national_id String    @db.VarChar(13)
-  room_code   String    @db.VarChar(10)
-  check_in    DateTime?
-  check_out   DateTime?
-  student     student   @relation(fields: [national_id], references: [national_id])
-  room        room      @relation(fields: [room_code], references: [room_code])
-
-  @@index([check_in])
-  @@index([national_id])
-  @@index([room_code])
-}
-
-model student {
-  national_id String    @id @db.VarChar(13)
-  prefix      String?   @db.VarChar(20)
-  fname       String?   @db.VarChar(50)
-  lname       String?   @db.VarChar(50)
-  user_id     String?   @db.VarChar(30)
-  major       String?   @db.VarChar(100)
-  checkin     checkin[]
-}
-
 model users {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique @db.VarChar(50)
-  password  String   @db.VarChar(255)
-  role      String   @db.VarChar(20)
+  id        Int       @id @default(autoincrement())
+  StudentId String?   @unique @db.VarChar(8)
+  prefix    String?   @db.VarChar(20)
+  fname     String?   @db.VarChar(50)
+  lname     String?   @db.VarChar(50)
+  nickname  String?   @db.VarChar(50)
+  password  String    @default("1234") @db.VarChar(255)
+  roleId    String?   @db.VarChar(20)
   img       String?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  majorId   String?   @db.VarChar(20)
+  phone     String?   @db.VarChar(15)
+  email     String?   @db.VarChar(100)
+  gen       String?   @db.VarChar(10)
+  checkin   checkin[]
+  major     major?    @relation(fields: [majorId], references: [majorId])
+  Role      Role?     @relation(fields: [roleId], references: [roleId])
+}
+
+model Role {
+  id     Int     @id @default(autoincrement())
+  name   String  @unique @db.VarChar(50)
+  roleId String  @unique @db.VarChar(20)
+  users  users[]
+}
+
+model major {
+  id      Int     @id @default(autoincrement())
+  majorId String  @unique @db.VarChar(20)
+  name    String  @db.VarChar(100)
+  users   users[]
 }
