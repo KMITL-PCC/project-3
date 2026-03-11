@@ -2,7 +2,7 @@ import type { Router } from 'express';
 import authController from '../controllers/auth.controller';
 
 const authRouter = (router: Router) => {
-  // POST /api/auth/login  -> RADIUS check + set session cookie
+  // POST /api/auth/login  -> set session cookie
   router.post('/auth/login', (req, res) => {
     authController.handleLogin(req, res);
   });
@@ -25,6 +25,11 @@ const authRouter = (router: Router) => {
   // POST /api/auth/refresh  (placeholder)
   router.post('/auth/refresh', (req, res) => {
     authController.handleRefreshToken(req, res);
+  });
+
+  // POST /api/auth/student-check
+  router.post('/auth/student-check', (req, res) => {
+    authController.handleStudentCheck(req, res);
   });
 };
 

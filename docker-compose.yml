@@ -11,11 +11,6 @@ services:
       - PORT=${PORT}
       - REDIS_URL=redis://redis:6379
       - SESSION_SECRET=${SESSION_SECRET}
-      - RADIUS_HOST=host.docker.internal
-      - RADIUS_PORT=${RADIUS_PORT}
-      - RADIUS_SECRET=${RADIUS_SECRET}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       - redis
 

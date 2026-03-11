@@ -1,22 +1,19 @@
-# กำหนดไว้ก่อนเผื่อเปลี่ยน version
-FROM node:24-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
-RUN echo "Cache bust 2"
 COPY package*.json ./
+RUN npm install && npm cache clean --force
 
-RUN npm install && npm install qrcode @types/qrcode && npm cache clean --force
-
+# Copy prisma schema + config before generate
 COPY prisma ./prisma
+COPY prisma.config.ts ./
 RUN npx prisma generate
 
 COPY . .
-
-RUN npm run build
 
 USER node
 
 EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+CMD ["npx", "tsx", "src/server.ts"]

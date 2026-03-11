@@ -4,16 +4,17 @@ import qrcodeController from '../controllers/qrcode.controller';
 function qrcodeRouter(router: express.Router) {
   const qrRouter = express.Router();
 
-  // 1. Web Init Session
-  qrRouter.post('/session-init', qrcodeController.initSession);
-  // 2. Web Generate Token
+  // Generate or refresh dynamic QR code
   qrRouter.post('/generate', qrcodeController.generateToken);
-  // 3. Mobile Scan
+  // Scan dynamic QR code (Discovery Phase)
   qrRouter.post('/scan', qrcodeController.scanQrCode);
-  // 4. Web Poll
-  qrRouter.get('/status/:qr_session_id', qrcodeController.pollSessionStatus);
+  // Poll for QR usage status
+  qrRouter.get('/poll/:class_session_id', qrcodeController.pollSessionStatus);
+  // Perform Check-in/Out/Swap action
+  qrRouter.post('/action', qrcodeController.actionQrCode);
 
   router.use('/qrcode', qrRouter);
 }
 
 export default qrcodeRouter;
+

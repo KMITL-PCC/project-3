@@ -1,5 +1,12 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "./generated/"
 }
 
@@ -7,136 +14,185 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id        Int     @id @default(autoincrement())
+  StudentId String? @unique @db.VarChar(8)
+  prefix     String? @db.VarChar(20)
+  fname      String? @db.VarChar(50)
+  lname      String? @db.VarChar(50)
+  nickname   String? @db.VarChar(50)
+  password  String  @db.VarChar(255) @default("1234") 
+  roleId    String? @db.VarChar(20)
+  role      Role?   @relation(fields: [roleId], references: [roleId])
+  img       String? @db.Text
+  createdAt DateTime @default(now())
+  majorId   String? @db.VarChar(20)
+  major     major?   @relation(fields: [majorId], references: [majorId])
+
+  checkins   Checkin[]
+
+  phone     String? @db.VarChar(15)
+  email     String? @db.VarChar(100)
+  gen       String? @db.VarChar(10)
+
+  @@map("users")
+}
+
+// Model Zone (for grouping devices)
+model major {
+  id       Int     @id @default(autoincrement())
+  majorId  String  @unique @db.VarChar(20)
+  name     String  @db.VarChar(100)
+  students User[]
+}
+
+model Role {
+  id   Int    @id @default(autoincrement())
+  name String @unique @db.VarChar(50)
+  roleId String @unique @db.VarChar(20)
+  users User[]
+}
+
+model Zone {
+  id       String   @id @default(uuid())
+  name     String   @unique
+  devices  Device[]
+}
+
+model Building {
+  buildingCode String @id @map("building_code") @db.VarChar(20)
+  buildingName String @map("building_name") @db.VarChar(200)
+
+  rooms Room[]
+
+  @@map("building")
+}
+
+model Room {
+  roomCode     String  @id @map("room_code") @db.VarChar(10)
+  buildingCode String? @map("building_code") @db.VarChar(20)
+  roomFloor    String? @map("room_floor") @db.VarChar(10)
+  roomCapacity String? @map("room_capacity") @db.VarChar(13)
+  roomDesc     String? @map("room_desc") @db.VarChar(47)
+
+  building Building? @relation(fields: [buildingCode], references: [buildingCode])
+
+  device    Device? @relation("RoomDevice")
+  sessions  ClassSession[]
+  checkins  Checkin[]
+
+  @@map("room")
+}
+
+// Model Ad
+model Ad {
+  id        String   @id @default(uuid())
+  name      String
+  url       String
+  type      String   @default("IMAGE") 
+  devices   Device[]
+  activities Activity[]
+  createdAt DateTime @default(now())
+}
+
+// Model Activity
 model Activity {
-  id          String   @id
+  id          String   @id @default(uuid())
+  devices     Device[]
   title       String
   description String?
   imageUrl    String?
   startTime   DateTime
   endTime     DateTime
   adId        String?
+  ad          Ad?      @relation(fields: [adId], references: [id])
   qrCodeId    String?
+  qrCode      QrCode?  @relation(fields: [qrCodeId], references: [id])
   createdAt   DateTime @default(now())
-  updatedAt   DateTime
-  Ad          Ad?      @relation(fields: [adId], references: [id])
-  QrCode      QrCode?  @relation(fields: [qrCodeId], references: [id])
-  Device      Device[] @relation("ActivityToDevice")
+  updatedAt   DateTime @updatedAt
 }
 
-model Ad {
-  id        String     @id
-  name      String
-  url       String
-  type      String     @default("IMAGE")
-  createdAt DateTime   @default(now())
-  Activity  Activity[]
-  Device    Device[]
-}
-
+// Model AuditLog (for tracking changes)
 model AuditLog {
   id        Int      @id @default(autoincrement())
   userId    String
   username  String
-  action    String
+  action    String   
   targetId  String
   details   Json?
   createdAt DateTime @default(now())
 }
 
-model Device {
-  id            String          @id
-  macAddress    String          @unique
-  deviceName    String?
-  roomCode      String?         @unique
-  ipAddress     String?
-  status        String          @default("PENDING")
-  lastSeen      DateTime        @default(now())
-  zoneId        String?
-  adId          String?
-  lastCommand   String?
-  Ad            Ad?             @relation(fields: [adId], references: [id])
-  room          room?           @relation(fields: [roomCode], references: [room_code])
-  Zone          Zone?           @relation(fields: [zoneId], references: [id])
-  class_session class_session[]
-  Activity      Activity[]      @relation("ActivityToDevice")
-}
-
+// Model QrCode
 model QrCode {
-  id          String     @id
+  id          String   @id @default(uuid())
   name        String
   description String?
-  type        String     @default("GENERATED")
-  data        String
-  createdAt   DateTime   @default(now())
-  Activity    Activity[]
+  type        String   @default("GENERATED") 
+  data        String   
+  createdAt   DateTime @default(now())
+  activities  Activity[]
 }
 
-model Zone {
-  id     String   @id
-  name   String   @unique
-  Device Device[]
+// Model Device
+model Device {
+  id         String @id @default(uuid())
+  macAddress String @unique
+  deviceName String?
+
+  roomCode String? @unique
+  room     Room? @relation("RoomDevice", fields: [roomCode], references: [roomCode])
+
+  ipAddress String?
+  status    String @default("PENDING")
+  lastSeen  DateTime @default(now())
+
+  zoneId String?
+  zone   Zone? @relation(fields: [zoneId], references: [id])
+
+  adId String?
+  ad   Ad? @relation(fields: [adId], references: [id])
+
+  activities Activity[]
+  sessions   ClassSession[]
+
+  lastCommand String?
 }
 
-model class_session {
+model ClassSession {
   id           Int      @id @default(autoincrement())
-  subject_id   Int
-  room_id      String   @db.VarChar(10)
-  device_id    String
-  qr_token     String   @unique @db.VarChar(255)
-  start_time   DateTime
-  end_time     DateTime
-  max_students Int
-  device_iot   Device   @relation(fields: [device_id], references: [id])
-  room         room     @relation(fields: [room_id], references: [room_code])
+
+  subjectId    Int      @map("subject_id")
+  roomId       String   @map("room_id") @db.VarChar(10)
+  deviceId     String   @map("device_id")
+
+  qrToken      String   @unique @map("qr_token") @db.VarChar(255)
+  startTime    DateTime @map("start_time")
+  endTime      DateTime @map("end_time")
+  maxStudents  Int      @map("max_students")
+
+  // subject     Subject    @relation(fields: [subjectId], references: [id])
+  room        Room       @relation(fields: [roomId], references: [roomCode])
+  device      Device     @relation(fields: [deviceId], references: [id])
+
+  // attendances Attendance[]
+
+  @@map("class_session")
 }
 
-model room {
-  room_code     String          @id @db.VarChar(10)
-  building_code String?         @db.VarChar(20)
-  room_floor    String?         @db.VarChar(10)
-  room_capacity String?         @db.VarChar(13)
-  room_desc     String?         @db.VarChar(47)
-  Device        Device?
-  checkin       checkin[]
-  class_session class_session[]
-  building      building?       @relation(fields: [building_code], references: [building_code])
-}
+model Checkin {
+  id         Int       @id @default(autoincrement())
+  StudentId String    @map("student_id") @db.VarChar(8)
+  roomCode   String    @map("room_code") @db.VarChar(10)
+  checkIn    DateTime? @map("check_in")
+  checkOut   DateTime? @map("check_out")
 
-model building {
-  building_code String @id @db.VarChar(20)
-  building_name String @db.VarChar(200)
-  room          room[]
-}
+  student User @relation(fields: [StudentId], references: [StudentId])
+  room    Room    @relation(fields: [roomCode], references: [roomCode])
 
-model checkin {
-  id          Int       @id @default(autoincrement())
-  national_id String    @db.VarChar(13)
-  room_code   String    @db.VarChar(10)
-  check_in    DateTime?
-  check_out   DateTime?
-  student     student   @relation(fields: [national_id], references: [national_id])
-  room        room      @relation(fields: [room_code], references: [room_code])
+  @@index([StudentId])
+  @@index([roomCode])
+  @@index([checkIn])
 
-  @@index([check_in])
-  @@index([national_id])
-  @@index([room_code])
-}
-
-model student {
-  national_id String    @id @db.VarChar(13)
-  prefix      String?   @db.VarChar(20)
-  fname       String?   @db.VarChar(50)
-  lname       String?   @db.VarChar(50)
-  user_id     String?   @db.VarChar(30)
-  major       String?   @db.VarChar(100)
-  checkin     checkin[]
-}
-
-model users {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique @db.VarChar(50)
-  password  String   @db.VarChar(255)
-  role      String   @db.VarChar(20)
-  img       String?
-  createdAt DateTime @default(now())
+  @@map("checkin")
 }

@@ -1,9 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import session from 'express-session';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const connectRedis = require('connect-redis');
-const RedisStore = connectRedis.RedisStore;
+import RedisStore from 'connect-redis';
 import { redisClient } from './lib/redis';
 
 // Import main root router
@@ -29,7 +27,7 @@ const sessionMaxAge   = parseInt(process.env.SESSION_MAX_AGE_DAYS || '30', 10) *
 
 app.use(
   session({
-    store: new RedisStore({ client: redisClient }),
+    store: new (RedisStore as any)({ client: redisClient }),
     secret: process.env.SESSION_SECRET || 'dev_fallback_secret',
     resave: false,
     saveUninitialized: false,

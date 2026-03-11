@@ -2,7 +2,7 @@ import { prisma } from "../lib/prisma";
 
 const dashboardService = {
 	getAllStats: async () => {
-		const totalUsers = await prisma.users.findMany();
+		const totalUsers = await prisma.user.findMany();
 
 		console.log(totalUsers);
 

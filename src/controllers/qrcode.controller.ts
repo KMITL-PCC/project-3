@@ -1,179 +1,272 @@
 import { Request, Response } from 'express';
+import { prisma } from '../lib/prisma';
 import crypto from 'crypto';
-import { redisClient } from '../lib/redis';
 
-// Extends express-session interface
-declare module 'express-session' {
-  interface SessionData {
-    roomData?: any;
-    userId?: string;
-    username?: string;
-    role?: string;
+// Dynamic QR Code Tokens (Keyed by token, allowing concurrent confirmation)
+const activeQrTokens = new Map<string, {
+  expires: number,
+  class_session_id: number,
+  subject_id: number,
+  startTime: Date,
+  endTime: Date,
+  roomCode: string,
+  roomDesc: string
+}>();
+
+// Booth Status (Keyed by class_session_id string, for booth refresh polling)
+const boothStatus = new Map<string, {
+  latestToken: string,
+  used: boolean
+}>();
+
+const QR_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes for user to confirm
+const QR_RENEWAL_THRESHOLD_MS = 30 * 1000; // Booth renews every 30s regardless
+
+async function createAuditLog(userId: string, username: string, action: string, targetId: string, details: any) {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        userId,
+        username,
+        action,
+        targetId,
+        details: details ? JSON.stringify(details) : undefined,
+      }
+    });
+  } catch (error) {
+    console.error('Audit Log Error:', error);
   }
 }
 
 const qrcodeController = {
-  // 1. Initialize a new QR Session (TTL 5 mins)
-  initSession: async (req: Request, res: Response) => {
-    try {
-      const qr_session_id = crypto.randomUUID();
-      const redisKey = `qr_session:${qr_session_id}`;
-      
-      const payload = { status: 'waiting' };
-      // 5 minutes TTL
-      await redisClient.setex(redisKey, 300, JSON.stringify(payload));
-
-      res.status(200).json({
-        message: 'QR Session initialized successfully',
-        qr_session_id,
-        expires_in: 300
-      });
-    } catch (error: any) {
-      console.error('Session Init Error:', error);
-      res.status(500).json({ message: error.message || 'Internal Server Error' });
-    }
-  },
-
-  // 2. Generate a random QR Token for a session (TTL 30 secs)
+  // Generate or refresh dynamic QR code
   generateToken: async (req: Request, res: Response) => {
+    const { class_session_id, macAddress } = req.body;
+
+    if (!class_session_id) {
+      res.status(400).json({ error: 'class_session_id is required' });
+      return;
+    }
+
     try {
-      const { qr_session_id } = req.body;
+      // Fetch Class Session and Device/Room info
+      const [session, device] = await Promise.all([
+        prisma.classSession.findUnique({ where: { id: parseInt(class_session_id) } }),
+        macAddress ? prisma.device.findUnique({
+          where: { macAddress },
+          include: { room: true }
+        }) : null
+      ]);
 
-      if (!qr_session_id) {
-        res.status(400).json({ message: 'qr_session_id is required' });
+      if (!session) {
+        res.status(404).json({ error: 'Class session not found' });
         return;
       }
 
-      // Verify the session still exists
-      const sessionExists = await redisClient.exists(`qr_session:${qr_session_id}`);
-      if (!sessionExists) {
-        res.status(404).json({ message: 'QR session not found or expired' });
-        return;
-      }
+      // Generate a simple unique token
+      const token = crypto.randomBytes(8).toString('hex');
+      const now = Date.now();
 
-      // Generate a 16-character random token
-      const qr_token = crypto.randomBytes(8).toString('hex');
-      const tokenKey = `qr_token:${qr_token}`;
-
-      // 30 seconds TTL mapping token -> session
-      await redisClient.setex(tokenKey, 30, qr_session_id);
-
-      const frontendBaseUrl = req.headers.origin || 'http://localhost:8080';
-      const scanUrl = `${frontendBaseUrl}/scan?token=${qr_token}`;
-
-      res.status(200).json({
-        message: 'QR Token generated successfully',
-        qr_token,
-        scan_url: scanUrl,
-        expires_in: 30
+      // 1. Register token in global registry (active for 5 mins)
+      activeQrTokens.set(token, {
+        expires: now + QR_VALIDITY_MS,
+        class_session_id: session.id,
+        subject_id: session.subjectId,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        roomCode: (device && device.roomCode) ? device.roomCode : 'Unknown',
+        roomDesc: (device && device.room && device.room.roomDesc) ? device.room.roomDesc : 'Unknown Location'
       });
+
+      // 2. Update booth status (tracking if the current token on screen has been scanned)
+      boothStatus.set(String(session.id), {
+        latestToken: token,
+        used: false
+      });
+
+      // Cleanup expired tokens
+      for (const [t, data] of activeQrTokens.entries()) {
+        if (data.expires < now) activeQrTokens.delete(t);
+      }
+
+      const frontendUrl = process.env.FRONTEND_URL || `http://${req.hostname}:3000`;
+
+      res.json({
+        message: "QR Token generated successfully",
+        qr_token: token,
+        scan_url: `${frontendUrl}/scan?token=${token}`,
+        expires_in: QR_VALIDITY_MS / 1000,
+        metadata: {
+          subject_id: session.subjectId,
+          roomCode: device?.roomCode,
+          roomDesc: device?.room?.roomDesc
+        }
+      });
+
     } catch (error: any) {
-      console.error('QR Token Gen Error:', error);
-      res.status(500).json({ message: error.message || 'Internal Server Error' });
+      console.error('QR Generate error:', error);
+      res.status(500).json({ error: 'Failed to generate QR code' });
     }
   },
 
-  // 3. Scan the QR Token (Mobile device)
+  // Scan dynamic QR code (Discovery Phase)
   scanQrCode: async (req: Request, res: Response) => {
+    const { token, studentId } = req.body;
+
+    if (!token || !studentId) {
+      res.status(400).json({ error: 'Token and studentId are required' });
+      return;
+    }
+
+    // Find token data
+    const tokenData = activeQrTokens.get(token);
+    if (!tokenData) {
+      res.status(404).json({ error: 'Invalid or expired token' });
+      return;
+    }
+
+    if (Date.now() > tokenData.expires) {
+      activeQrTokens.delete(token);
+      res.status(410).json({ error: 'Token has expired' });
+      return;
+    }
+
     try {
-      const { token } = req.body;
-      
-      // Attempt to extract userId from headers/session (assuming mobile login auth passes here)
-      // Since this is scanning, the device scanning likely needs to provide which user is approving this.
-      // If the mobile app hits this, we assume it's an authenticated request.
-      // For now, let's take it from req.body (or we can extract from a mobile API session later).
-      const { userId } = req.body; 
-
-      if (!token) {
-        res.status(400).json({ message: 'Token is required' });
-        return;
-      }
-
-      if (!userId) {
-        res.status(400).json({ message: 'userId is required from scanning device' });
-        return;
-      }
-
-      const tokenKey = `qr_token:${token}`;
-      const qr_session_id = await redisClient.get(tokenKey);
-
-      if (!qr_session_id) {
-        res.status(401).json({ message: 'Invalid or Expired Token' });
-        return;
-      }
-
-      // Read current session
-      const sessionKey = `qr_session:${qr_session_id}`;
-      const sessionDataStr = await redisClient.get(sessionKey);
-      
-      if (!sessionDataStr) {
-        res.status(404).json({ message: 'QR session expired' });
-        return;
-      }
-
-      // Mark session as approved and attach user
-      const updatedSession = { status: 'approved', userId };
-      
-      // Keep existing TTL, or overwrite with remaining time. Here we just set 60s buffer for web to poll.
-      await redisClient.setex(sessionKey, 60, JSON.stringify(updatedSession));
-
-      // Make token one-time use
-      await redisClient.del(tokenKey);
-
-      res.status(200).json({
-        message: 'QR Code scanned, session approved',
-        qr_session_id
+      // Fetch user info if possible
+      const user = await prisma.user.findUnique({
+        where: { StudentId: studentId }
       });
+
+      // Detect current state for this user
+      const activeCheckin = await prisma.checkin.findFirst({
+        where: {
+          StudentId: studentId,
+          checkOut: null
+        },
+        orderBy: { checkIn: 'desc' }
+      });
+
+      let recommendedAction = 'CHECK_IN';
+      let currentSession: any = null;
+
+      if (activeCheckin) {
+        if (activeCheckin.roomCode === tokenData.roomCode) {
+          recommendedAction = 'CHECK_OUT';
+        } else {
+          recommendedAction = 'SWAP';
+        }
+        currentSession = activeCheckin;
+      }
+
+      // If this token is the LATEST one on the booth screen, mark booth as "used" to trigger refresh
+      const status = boothStatus.get(String(tokenData.class_session_id));
+      if (status && status.latestToken === token) {
+        status.used = true;
+      }
+
+      res.json({
+        success: true,
+        action: recommendedAction,
+        currentSession,
+        metadata: {
+          class_session_id: tokenData.class_session_id,
+          subject_id: tokenData.subject_id,
+          startTime: tokenData.startTime,
+          endTime: tokenData.endTime,
+          roomCode: tokenData.roomCode,
+          roomDesc: tokenData.roomDesc,
+          studentName: user ? `${user.fname || ''} ${user.lname || ''}`.trim() : 'Guest User'
+        }
+      });
+
     } catch (error: any) {
-      console.error('QR Code Scan Error:', error);
-      res.status(500).json({ message: error.message || 'Internal Server Error' });
+      console.error('Scan discovery error:', error);
+      res.status(500).json({ error: 'Failed to verify check-in state' });
     }
   },
 
-  // 4. Poll for Session Status (Web browser)
+  // Poll for QR usage status
   pollSessionStatus: async (req: Request, res: Response) => {
+    const { class_session_id } = req.params;
+    const status = boothStatus.get(class_session_id as string);
+
+    if (!status) {
+      res.json({ used: true, reason: 'uninitialized' });
+      return;
+    }
+
+    res.json({ used: status.used });
+  },
+
+  // Perform Check-in/Out/Swap action
+  actionQrCode: async (req: Request, res: Response) => {
+    const { action, studentId, token, isGuest } = req.body;
+
+    if (!action || !studentId || !token) {
+      res.status(400).json({ error: 'Action, studentId, and token are required' });
+      return;
+    }
+
+    // Validate token again
+    const tokenData = activeQrTokens.get(token);
+    if (!tokenData || Date.now() > tokenData.expires) {
+      if (tokenData) activeQrTokens.delete(token);
+      res.status(404).json({ error: 'Token expired or invalid. Please scan again.' });
+      return;
+    }
+
     try {
-      const { qr_session_id } = req.params;
+      const roomCode = tokenData.roomCode;
 
-      if (!qr_session_id) {
-        res.status(400).json({ message: 'qr_session_id is required' });
-        return;
-      }
+      // 1. Ensure user exists (upsert)
+      await prisma.user.upsert({
+        where: { StudentId: studentId },
+        update: {},
+        create: {
+          StudentId: studentId,
+          fname: isGuest ? 'Guest' : 'Student',
+          lname: isGuest ? 'User' : 'Member',
+          password: '1234',
+        }
+      });
 
-      const sessionKey = `qr_session:${qr_session_id}`;
-      const sessionDataStr = await redisClient.get(sessionKey);
+      if (action === 'CHECK_IN' || action === 'SWAP') {
+        if (action === 'SWAP') {
+          await prisma.checkin.updateMany({
+            where: { StudentId: studentId, checkOut: null },
+            data: { checkOut: new Date() }
+          });
+        }
 
-      if (!sessionDataStr) {
-        res.status(404).json({ message: 'QR session not found or expired' });
-        return;
-      }
-
-      const sessionData = JSON.parse(sessionDataStr);
-
-      if (sessionData.status === 'approved') {
-        const { userId } = sessionData;
-        
-        // Convert to long-lived actual login session explicitly for the caller
-        (req.session as any).userId = userId;
-        req.session.cookie.maxAge = 24 * 60 * 60 * 1000; // 1 day in ms
-        
-        // Clear the one-time QR session now that a real session is formed
-        await redisClient.del(sessionKey);
-
-        res.status(200).json({
-          status: 'approved',
-          message: 'Login successful via QR',
-          user: { id: userId } // Return necessary info
+        await prisma.checkin.create({
+          data: {
+            StudentId: studentId,
+            roomCode: roomCode,
+            checkIn: new Date()
+          }
         });
-        return;
+      } else if (action === 'CHECK_OUT') {
+        await prisma.checkin.updateMany({
+          where: { StudentId: studentId, roomCode: roomCode, checkOut: null },
+          data: { checkOut: new Date() }
+        });
       }
 
-      // If still waiting
-      res.status(200).json({ status: 'waiting' });
+      // Record audit log
+      await createAuditLog(studentId, isGuest ? 'Guest' : studentId, `QR_${action}`, roomCode, { token });
+
+      // Mark as completed (delete from active tokens)
+      activeQrTokens.delete(token);
+
+      res.json({
+        success: true,
+        message: `${action} completed successfully`,
+        action
+      });
 
     } catch (error: any) {
-      console.error('QR Session Status Error:', error);
-      res.status(500).json({ message: error.message || 'Internal Server Error' });
+      console.error('Final action error:', error);
+      res.status(500).json({ error: 'Failed to complete transaction' });
     }
   }
 };
