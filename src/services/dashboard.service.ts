@@ -63,8 +63,6 @@ const dashboardService = {
     const start = `${formatDate(date)}T00:00:00.000Z`;
     const end = `${formatDate(date)}T23:59:59.999Z`;
 
-    console.log(start, end);
-
     const whereClause = search
       ? {
           room_code: roomCode,
@@ -78,6 +76,14 @@ const dashboardService = {
             {
               users: {
                 fname: {
+                  contains: search,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+            },
+            {
+              users: {
+                lname: {
                   contains: search,
                   mode: Prisma.QueryMode.insensitive,
                 },
@@ -121,8 +127,7 @@ const dashboardService = {
 
     const attendances = data.map((attendance) => ({
       studentId: attendance.student_id,
-      fname: attendance.users.fname,
-      lname: attendance.users.lname,
+      user_name: `${attendance.users.fname} ${attendance.users.lname}`,
       checkinTime: attendance.check_in,
       checkoutTime: attendance.check_out,
     }));

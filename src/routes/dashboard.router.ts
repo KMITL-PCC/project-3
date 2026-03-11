@@ -1,10 +1,10 @@
 import express from "express";
 import dashboardController from "../controllers/dashboard.controller";
-import dashboardMiddleware from "../middleware/dashboard.middleware";
+import authMiddleware from "../middleware/auth.middleware";
 
 const router = express.Router();
 
-router.use(dashboardMiddleware);
+router.use(authMiddleware);
 
 router.get("/", (req, res) => res.send("Dashboard Route"));
 
