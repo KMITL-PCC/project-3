@@ -6,12 +6,8 @@ type User = {
   role: "admin" | "user" | "guest";
 };
 
-const dashboardMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  console.log("Dashboard middleware");
+const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  console.log("Auth middleware");
 
   const user: User[] = [
     {
@@ -41,4 +37,4 @@ const dashboardMiddleware = (
   }
 };
 
-export default dashboardMiddleware;
+export default authMiddleware;
