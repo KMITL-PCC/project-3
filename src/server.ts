@@ -51,3 +51,4 @@ app.listen(port, "0.0.0.0", () => {
   console.log(`Me:     GET  http://localhost:${port}/api/auth/me`);
   console.log(`Logout: POST http://localhost:${port}/api/auth/logout`);
 });
+ 

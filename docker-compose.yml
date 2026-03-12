@@ -5,6 +5,8 @@ services:
     restart: always
     ports:
       - "${PORT}:${PORT}"
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
       - DATABASE_URL=${DATABASE_URL}
