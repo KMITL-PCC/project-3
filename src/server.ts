@@ -15,29 +15,49 @@ app.set('trust proxy', 1);
 
 // --- Middleware: CORS ---
 const allowedOrigins = [
-  'http://localhost:3000', 
-  'http://localhost:3001', 
+  'http://localhost:3000',
+  'http://localhost:3001',
   'http://localhost:6060',
-  'http://127.0.0.1:3000', 
+  'http://127.0.0.1:3000',
   'http://127.0.0.1:3001',
   'http://127.0.0.1:6060',
   'http://192.168.0.166:3000',
   'http://192.168.0.166:6060'
 ];
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1 || isProd) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true,
-  })
-);
+// app.use(
+//   cors({
+//     origin: (origin, callback) => {
+//       // Allow requests with no origin (like mobile apps or curl)
+//       if (!origin) return callback(null, true);
+//       if (allowedOrigins.indexOf(origin) !== -1 || isProd) {
+//         callback(null, true);
+//       } else {
+//         callback(new Error('Not allowed by CORS'));
+//       }
+//     },
+//     credentials: true,
+//   })
+// );
+
+// app.use(cors({
+//   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+
+//     console.log('[CORS Debug] Incoming Origin:', origin);
+
+//     if (!origin) {
+//       console.log('[CORS Debug] Allowed: No Origin detected');
+//       return callback(null, true);
+//     }
+
+//     if (allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       console.error(`[CORS Blocked] The origin "${origin}" is not in the allowed list.`);
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   credentials: true,
+// }));
 
 app.use(express.json());
 
@@ -68,7 +88,7 @@ app.use(
     name: 'connect.sid',
     cookie: {
       httpOnly: true,
-      secure: false, 
+      secure: false,
       sameSite: 'lax',
       maxAge: sessionMaxAge,
     },
