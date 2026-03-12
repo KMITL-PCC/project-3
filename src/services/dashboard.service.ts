@@ -13,9 +13,20 @@ const dashboardService = {
 		const start = `${formatDate(date)}T00:00:00.000Z`;
 		const end = `${formatDate(date)}T23:59:59.999Z`;
 
-		const whereClause = search
+		const baseWhere: Prisma.CheckinWhereInput = {
+			checkIn: {
+				gte: start,
+				lte: end,
+			},
+		};
+
+		if (roomCode !== "All") {
+			baseWhere.roomCode = roomCode;
+		}
+
+		const whereClause: Prisma.CheckinWhereInput = search
 			? {
-					roomCode: roomCode,
+					...baseWhere,
 					OR: [
 						{
 							StudentId: {
@@ -40,18 +51,8 @@ const dashboardService = {
 							},
 						},
 					],
-					checkIn: {
-						gte: start,
-						lte: end,
-					},
 				}
-			: {
-					roomCode: roomCode,
-					checkIn: {
-						gte: start,
-						lte: end,
-					},
-				};
+			: baseWhere;
 
 		const [data, attendancesCount] = await Promise.all([
 			prisma.checkin.findMany({
@@ -60,6 +61,7 @@ const dashboardService = {
 					checkIn: true,
 					checkOut: true,
 					StudentId: true,
+					roomCode: true,
 					student: {
 						select: {
 							fname: true,
@@ -80,6 +82,7 @@ const dashboardService = {
 			user_name: `${attendance.student.fname} ${attendance.student.lname}`,
 			checkinTime: attendance.checkIn,
 			checkoutTime: attendance.checkOut,
+			room_code: attendance.roomCode,
 		}));
 
 		return { attendances, attendancesCount, pageCount, limit, page };

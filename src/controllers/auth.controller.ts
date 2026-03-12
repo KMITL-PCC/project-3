@@ -19,16 +19,25 @@ const authController = {
             console.log(`[Login API] Login successful for ${studentId}, setting session...`);
 
             // บันทึกข้อมูลลงใน Session (เก็บใน Redis)
-            (req.session as any).userId    = user.id;
-            (req.session as any).studentId = user.studentId;
-            (req.session as any).role      = user.role;
-            (req.session as any).roleId    = user.roleId;
-            (req.session as any).fname     = user.fname;
-            (req.session as any).lname     = user.lname;
+            const sessionData = req.session as any;
+            sessionData.userId    = user.id;
+            sessionData.studentId = user.studentId;
+            sessionData.role      = user.role;
+            sessionData.roleId    = user.roleId;
+            sessionData.fname     = user.fname;
+            sessionData.lname     = user.lname;
 
-            res.status(200).json({
-                message: 'Login successful',
-                user,
+            console.log('[Login API] Session data before save:', req.session);
+
+            req.session.save((err) => {
+                if (err) {
+                    console.error('[Login API] Failed to save session:', err);
+                    return res.status(500).json({ message: 'Internal Server Error' });
+                }
+                res.status(200).json({
+                    message: 'Login successful',
+                    user,
+                });
             });
         } catch (error: any) {
             console.error('Login Error:', error);
@@ -93,7 +102,14 @@ const authController = {
                 res.status(401).json({ message: 'User not found' });
                 return;
             }
-            res.status(200).json({ user });
+
+            // Map StudentId to studentId for consistency
+            const formattedUser = {
+                ...user,
+                studentId: user.StudentId,
+            };
+
+            res.status(200).json({ user: formattedUser });
         } catch (error: any) {
             res.status(500).json({ message: error.message });
         }
@@ -112,15 +128,17 @@ const authController = {
 
     // 6. Handle Student Check (for /scan page login)
     handleStudentCheck: async (req: Request, res: Response) => {
-        const { studentId } = req.body;
+        // Accepts studentId (camelCase), StudentId (original), or userId (common in frontend)
+        const studentId = req.body.studentId || req.body.StudentId || req.body.userId;
+        
         if (!studentId) {
-            res.status(400).json({ error: 'studentId is required' });
+            res.status(400).json({ error: 'studentId, StudentId, or userId is required' });
             return;
         }
 
         try {
             const user = await prisma.user.findUnique({
-                where: { StudentId: studentId },
+                where: { StudentId: String(studentId) },
                 select: {
                     id: true,
                     StudentId: true,
@@ -142,6 +160,13 @@ const authController = {
             console.error('Student Check Error:', error);
             res.status(500).json({ error: 'Failed to verify identity' });
         }
+    },
+
+    // 7. Handle Guest Status (for Booth Scan session recovery)
+    handleGuestStatus: async (req: Request, res: Response) => {
+        // Since we don't have a specific guest session logic yet,
+        // we'll return isActive: false for now, or check for an active guest checkin if needed.
+        res.json({ isActive: false });
     },
 };
 

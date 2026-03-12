@@ -31,6 +31,11 @@ const authRouter = (router: Router) => {
   router.post('/auth/student-check', (req, res) => {
     authController.handleStudentCheck(req, res);
   });
+
+  // GET /api/auth/guest-status
+  router.get('/auth/guest-status', (req, res) => {
+    authController.handleGuestStatus(req, res);
+  });
 };
 
 export default authRouter;
