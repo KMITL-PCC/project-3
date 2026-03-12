@@ -4,11 +4,12 @@ import { prisma } from '../lib/prisma';
 interface LoginInput {
   studentId: string;
   password: string;
+  room: string
 }
 
 const authService = {
   login: async (input: LoginInput) => {
-    const { studentId, password } = input;
+    const { studentId, password, room } = input;
 
     console.log(`[AuthService] Checking user in DB for ${studentId}`);
     const user = await prisma.user.findUnique({
@@ -27,13 +28,14 @@ const authService = {
     }
 
     return {
-      id: user.id,
-      studentId: user.StudentId,
-      fname: user.fname,
-      lname: user.lname,
-      role: user.role?.name || null,
-      roleId: user.roleId,
-      major: user.major?.name || null,
+      // id: user.id,
+      // studentId: user.StudentId,
+      // fname: user.fname,
+      // lname: user.lname,
+      // role: user.role?.name || null,
+      // roleId: user.roleId,
+      // major: user.major?.name || null,
+      message: "Login successful",
     };
   },
 

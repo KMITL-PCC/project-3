@@ -6,17 +6,17 @@ const authController = {
     // 1. Handle Login -> บันทึก session cookie
     handleLogin: async (req: Request, res: Response) => {
         try {
-            const { studentId, password } = req.body;
+            const { studentId, password, room } = req.body;
 
-            if (!studentId || !password) {
+            if (!studentId || !password || !room) {
                 res.status(400).json({ message: 'Student ID and password are required' });
                 return;
             }
 
-            console.log(`[Login API] Starting login for ${studentId}...`);
+            // console.log(`[Login API] Starting login for ${studentId}...`);
             // login() check DB
-            const user = await authService.login({ studentId, password });
-            console.log(`[Login API] Login successful for ${studentId}, setting session...`);
+            const user = await authService.login({ studentId, password, room });
+            // console.log(`[Login API] Login successful for ${studentId}, setting session...`);
 
             // บันทึกข้อมูลลงใน Session (เก็บใน Redis)
             (req.session as any).userId    = user.id;
