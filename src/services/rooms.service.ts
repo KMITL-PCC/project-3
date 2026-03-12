@@ -1,17 +1,26 @@
+import { prisma } from "../lib/prisma";
+
 const roomsService = {
-	getAll: () => {
-		// TODO: Implement get all rooms
+	getAll: async () => {
+		return await prisma.room.findMany({
+			select: {
+				roomCode: true,
+				roomDesc: true,
+			},
+		});
 	},
-	getById: (id: string) => {
-		// TODO: Implement get room by id
+	getById: async (id: string) => {
+		return await prisma.room.findUnique({
+			where: { roomCode: id },
+		});
 	},
-	create: (data: any) => {
+	create: async (data: any) => {
 		// TODO: Implement create room
 	},
-	update: (id: string, data: any) => {
+	update: async (id: string, data: any) => {
 		// TODO: Implement update room
 	},
-	delete: (id: string) => {
+	delete: async (id: string) => {
 		// TODO: Implement delete room
 	},
 };

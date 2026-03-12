@@ -7,6 +7,11 @@ const authRouter = (router: Router) => {
     authController.handleLogin(req, res);
   });
 
+  // POST /api/auth/guest
+  router.post('/auth/guest', (req, res) => {
+    authController.handleGuestLogin(req, res);
+  });
+
   // POST /api/auth/register
   router.post('/auth/register', (req, res) => {
     authController.handleRegister(req, res);
@@ -30,6 +35,11 @@ const authRouter = (router: Router) => {
   // POST /api/auth/student-check
   router.post('/auth/student-check', (req, res) => {
     authController.handleStudentCheck(req, res);
+  });
+
+  // GET /api/auth/guest-status
+  router.get('/auth/guest-status', (req, res) => {
+    authController.handleGuestStatus(req, res);
   });
 };
 

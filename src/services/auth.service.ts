@@ -4,11 +4,12 @@ import { prisma } from '../lib/prisma';
 interface LoginInput {
   studentId: string;
   password: string;
+  room: string
 }
 
 const authService = {
   login: async (input: LoginInput) => {
-    const { studentId, password } = input;
+    const { studentId, password, room } = input;
 
     console.log(`[AuthService] Checking user in DB for ${studentId}`);
     const user = await prisma.user.findUnique({
@@ -22,8 +23,8 @@ const authService = {
 
     // Simple password check (for development/testing)
     if (user.password !== password) {
-       console.log(`[AuthService] Password mismatch for ${studentId}`);
-       throw new Error('Invalid credentials');
+      console.log(`[AuthService] Password mismatch for ${studentId}`);
+      throw new Error('Invalid credentials');
     }
 
     return {
@@ -35,6 +36,30 @@ const authService = {
       roleId: user.roleId,
       major: user.major?.name || null,
     };
+  },
+
+  guestLogin: async (room: string) => {
+
+    const existingRoom = await prisma.room.findFirst({
+      where: {
+        roomCode: room
+      }
+    });
+
+    if (!existingRoom) {
+      throw new Error('Does not exist room code');
+    }
+    const guestUser = await prisma.user.findUnique({
+      where: {
+        StudentId: 'Guest',
+      },
+      select: {
+        StudentId: true,
+        roleId: true,
+      }
+    });
+    return guestUser;
+
   },
 
   register: (_data: any) => {

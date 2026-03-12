@@ -120,10 +120,12 @@ const qrcodeController = {
 
   // Scan dynamic QR code (Discovery Phase)
   scanQrCode: async (req: Request, res: Response) => {
-    const { token, studentId } = req.body;
+    // Booth Scan uses userId, project-front uses studentId
+    const { token, userId, studentId } = req.body;
+    const finalId = userId || studentId;
 
-    if (!token || !studentId) {
-      res.status(400).json({ error: 'Token and studentId are required' });
+    if (!token || !finalId) {
+      res.status(400).json({ error: 'Token and studentId/userId are required' });
       return;
     }
 
@@ -143,13 +145,13 @@ const qrcodeController = {
     try {
       // Fetch user info if possible
       const user = await prisma.user.findUnique({
-        where: { StudentId: studentId }
+        where: { StudentId: String(finalId) }
       });
 
       // Detect current state for this user
       const activeCheckin = await prisma.checkin.findFirst({
         where: {
-          StudentId: studentId,
+          StudentId: String(finalId),
           checkOut: null
         },
         orderBy: { checkIn: 'desc' }
@@ -179,6 +181,8 @@ const qrcodeController = {
         currentSession,
         metadata: {
           class_session_id: tokenData.class_session_id,
+          activityId: tokenData.class_session_id, // Booth Scan mapping
+          activityTitle: `Room session ${tokenData.roomCode}`, // Booth Scan mapping
           subject_id: tokenData.subject_id,
           startTime: tokenData.startTime,
           endTime: tokenData.endTime,
@@ -209,10 +213,11 @@ const qrcodeController = {
 
   // Perform Check-in/Out/Swap action
   actionQrCode: async (req: Request, res: Response) => {
-    const { action, studentId, token, isGuest } = req.body;
+    const { action, studentId, userId, token, isGuest } = req.body;
+    const finalId = userId || studentId;
 
-    if (!action || !studentId || !token) {
-      res.status(400).json({ error: 'Action, studentId, and token are required' });
+    if (!action || !finalId || !token) {
+      res.status(400).json({ error: 'Action, studentId/userId, and token are required' });
       return;
     }
 
@@ -229,10 +234,10 @@ const qrcodeController = {
 
       // 1. Ensure user exists (upsert)
       await prisma.user.upsert({
-        where: { StudentId: studentId },
+        where: { StudentId: String(finalId) },
         update: {},
         create: {
-          StudentId: studentId,
+          StudentId: String(finalId),
           fname: isGuest ? 'Guest' : 'Student',
           lname: isGuest ? 'User' : 'Member',
           password: '1234',
@@ -242,11 +247,119 @@ const qrcodeController = {
       if (action === 'CHECK_IN' || action === 'SWAP') {
         if (action === 'SWAP') {
           await prisma.checkin.updateMany({
+            where: { StudentId: String(finalId), checkOut: null },
+            data: { checkOut: new Date() }
+          });
+        }
+
+        await prisma.checkin.create({
+          data: {
+            StudentId: String(finalId),
+            roomCode: roomCode,
+            checkIn: new Date()
+          }
+        });
+      } else if (action === 'CHECK_OUT') {
+        await prisma.checkin.updateMany({
+          where: { StudentId: String(finalId), roomCode: roomCode, checkOut: null },
+          data: { checkOut: new Date() }
+        });
+      }
+
+      // Record audit log
+      await createAuditLog(String(finalId), isGuest ? 'Guest' : String(finalId), `QR_${action}`, roomCode, { token });
+
+      // Mark as completed (delete from active tokens)
+      activeQrTokens.delete(token);
+
+      res.json({
+        success: true,
+        message: `${action} completed successfully`,
+        action
+      });
+
+    } catch (error: any) {
+      console.error('Final action error:', error);
+      res.status(500).json({ error: 'Failed to complete transaction' });
+    }
+  },
+
+  // Get current status for a student in a specific room
+  getUserStatus: async (req: Request, res: Response) => {
+    const { roomCode } = req.params;
+    const session = req.session as any;
+    const studentId = session.studentId;
+
+    if (!studentId) {
+      res.status(401).json({ error: 'Unauthorized: No active session' });
+      return;
+    }
+
+    try {
+      // Find latest active check-in
+      const activeCheckin = await prisma.checkin.findFirst({
+        where: {
+          StudentId: studentId,
+          checkOut: null
+        },
+        orderBy: { checkIn: 'desc' },
+        include: { room: true }
+      });
+
+      if (!activeCheckin) {
+        res.json({ action: 'CHECK_IN' });
+        return;
+      }
+
+      if (activeCheckin.roomCode === roomCode) {
+        res.json({ 
+          action: 'CHECK_OUT',
+          since: activeCheckin.checkIn
+        });
+        return;
+      }
+
+      // If checked in elsewhere
+      res.json({
+        action: 'SWAP',
+        currentRoom: activeCheckin.roomCode,
+        currentRoomDesc: activeCheckin.room?.roomDesc || 'Unknown',
+        since: activeCheckin.checkIn
+      });
+
+    } catch (error: any) {
+      console.error('Get status error:', error);
+      res.status(500).json({ error: 'Failed to fetch status' });
+    }
+  },
+
+  // Direct action (for attendance page without QR token)
+  directAction: async (req: Request, res: Response) => {
+    const { action, roomCode } = req.body;
+    const session = req.session as any;
+    const studentId = session.studentId;
+
+    if (!studentId) {
+      res.status(401).json({ error: 'Unauthorized: No active session' });
+      return;
+    }
+
+    if (!action || !roomCode) {
+      res.status(400).json({ error: 'Action and roomCode are required' });
+      return;
+    }
+
+    try {
+      if (action === 'CHECK_IN' || action === 'SWAP') {
+        if (action === 'SWAP') {
+          // Checkout from all other rooms first
+          await prisma.checkin.updateMany({
             where: { StudentId: studentId, checkOut: null },
             data: { checkOut: new Date() }
           });
         }
 
+        // Create new check-in
         await prisma.checkin.create({
           data: {
             StudentId: studentId,
@@ -262,10 +375,7 @@ const qrcodeController = {
       }
 
       // Record audit log
-      await createAuditLog(studentId, isGuest ? 'Guest' : studentId, `QR_${action}`, roomCode, { token });
-
-      // Mark as completed (delete from active tokens)
-      activeQrTokens.delete(token);
+      await createAuditLog(studentId, studentId, `DIRECT_${action}`, roomCode, { direct: true });
 
       res.json({
         success: true,
@@ -274,8 +384,32 @@ const qrcodeController = {
       });
 
     } catch (error: any) {
-      console.error('Final action error:', error);
+      console.error('Direct action error:', error);
       res.status(500).json({ error: 'Failed to complete transaction' });
+    }
+  },
+
+  // Ping token (for screen sync/refresh)
+  pingToken: async (req: Request, res: Response) => {
+    const { token } = req.body;
+    if (!token) {
+      res.status(400).json({ error: 'Token is required' });
+      return;
+    }
+
+    const tokenData = activeQrTokens.get(token);
+    if (!tokenData) {
+      res.status(404).json({ error: 'Invalid or expired token' });
+      return;
+    }
+
+    // Booth screen sync logic (refresh used status)
+    const status = boothStatus.get(String(tokenData.class_session_id));
+    if (status && status.latestToken === token) {
+      // Small metadata refresh or heartbeat
+      res.json({ success: true, ping: 'pong' });
+    } else {
+      res.json({ success: true, warning: 'token_not_latest' });
     }
   }
 };
