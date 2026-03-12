@@ -15,6 +15,7 @@ const roomsController = {
 			});
 		}
 	},
+	
 	handleGetById: async (req: any, res: any) => {
 		try {
 			const result = await roomsService.getById(req.params.id);
