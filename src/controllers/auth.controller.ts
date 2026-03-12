@@ -131,7 +131,14 @@ const authController = {
                 res.status(401).json({ message: 'User not found' });
                 return;
             }
-            res.status(200).json({ user });
+
+            // Map StudentId to studentId for consistency
+            const formattedUser = {
+                ...user,
+                studentId: user.StudentId,
+            };
+
+            res.status(200).json({ user: formattedUser });
         } catch (error: any) {
             res.status(500).json({ message: error.message });
         }
@@ -150,15 +157,17 @@ const authController = {
 
     // 6. Handle Student Check (for /scan page login)
     handleStudentCheck: async (req: Request, res: Response) => {
-        const { studentId } = req.body;
+        // Accepts studentId (camelCase), StudentId (original), or userId (common in frontend)
+        const studentId = req.body.studentId || req.body.StudentId || req.body.userId;
+
         if (!studentId) {
-            res.status(400).json({ error: 'studentId is required' });
+            res.status(400).json({ error: 'studentId, StudentId, or userId is required' });
             return;
         }
 
         try {
             const user = await prisma.user.findUnique({
-                where: { StudentId: studentId },
+                where: { StudentId: String(studentId) },
                 select: {
                     id: true,
                     StudentId: true,
@@ -180,6 +189,13 @@ const authController = {
             console.error('Student Check Error:', error);
             res.status(500).json({ error: 'Failed to verify identity' });
         }
+    },
+
+    // 7. Handle Guest Status (for Booth Scan session recovery)
+    handleGuestStatus: async (req: Request, res: Response) => {
+        // Since we don't have a specific guest session logic yet,
+        // we'll return isActive: false for now, or check for an active guest checkin if needed.
+        res.json({ isActive: false });
     },
 };
 
