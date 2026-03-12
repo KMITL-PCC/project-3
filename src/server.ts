@@ -20,10 +20,10 @@ app.use(express.json());
 
 // --- Middleware: Session + Redis Store ---
 const isProd = process.env.NODE_ENV === 'production';
-const cookieDomain    = process.env.COOKIE_DOMAIN || undefined;          // prod: '.example.com'
-const cookieSecure    = process.env.COOKIE_SECURE === 'true' || isProd; // dev: false, prod: true
-const cookieSameSite  = (process.env.COOKIE_SAMESITE as 'lax' | 'strict' | 'none') || 'lax';
-const sessionMaxAge   = parseInt(process.env.SESSION_MAX_AGE_DAYS || '30', 10) * 24 * 60 * 60 * 1000;
+const cookieDomain = process.env.COOKIE_DOMAIN || undefined;          // prod: '.example.com'
+const cookieSecure = process.env.COOKIE_SECURE === 'true' || isProd; // dev: false, prod: true
+const cookieSameSite = (process.env.COOKIE_SAMESITE as 'lax' | 'strict' | 'none') || 'lax';
+const sessionMaxAge = parseInt(process.env.SESSION_MAX_AGE_DAYS || '30', 10) * 24 * 60 * 60 * 1000;
 
 app.use(
   session({
