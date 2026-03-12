@@ -28,28 +28,35 @@ const authService = {
     }
 
     return {
-      // id: user.id,
-      // studentId: user.StudentId,
-      // fname: user.fname,
-      // lname: user.lname,
-      // role: user.role?.name || null,
-      // roleId: user.roleId,
-      // major: user.major?.name || null,
-      message: "Login successful",
+      id: user.id,
+      studentId: user.StudentId,
+      fname: user.fname,
+      lname: user.lname,
+      role: user.role?.name || null,
+      roleId: user.roleId,
+      major: user.major?.name || null,
     };
   },
 
   guestLogin: async (room: string) => {
 
+    const existingRoom = await prisma.room.findFirst({
+      where: {
+        roomCode: room
+      }
+    });
+
+    if (!existingRoom) {
+      throw new Error('Does not exist room code');
+    }
     const guestUser = await prisma.user.findUnique({
       where: {
-        fname: 'Guest',
+        StudentId: 'Guest',
       },
       select: {
         StudentId: true,
       }
     });
-
     return guestUser;
 
   },

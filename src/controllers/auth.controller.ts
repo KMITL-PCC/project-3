@@ -43,7 +43,7 @@ const authController = {
 
     handleGuestLogin: async (req: Request, res: Response) => {
         try {
-            const { room } = req.body;
+            const { room } = req.body || {};
 
             if (!room) {
                 res.status(400).json({ message: 'Room is required for guest login' });
@@ -53,6 +53,13 @@ const authController = {
             const guestUser = await authService.guestLogin(room);
             (req.session as any).room = room;
             (req.session as any).studentId = guestUser.StudentId;
+
+            console.log("this room is ", req.session.room)
+
+            res.status(200).json({
+                message: 'Login successful',
+                user: guestUser,
+            });
 
         } catch (error: unknown) {
             if (error instanceof Error) {
