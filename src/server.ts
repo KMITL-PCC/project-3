@@ -39,25 +39,25 @@ const allowedOrigins = [
 //   })
 // );
 
-app.use(cors({
-  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+// app.use(cors({
+//   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
 
-    console.log('[CORS Debug] Incoming Origin:', origin);
+//     console.log('[CORS Debug] Incoming Origin:', origin);
 
-    if (!origin) {
-      console.log('[CORS Debug] Allowed: No Origin detected');
-      return callback(null, true);
-    }
+//     if (!origin) {
+//       console.log('[CORS Debug] Allowed: No Origin detected');
+//       return callback(null, true);
+//     }
 
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.error(`[CORS Blocked] The origin "${origin}" is not in the allowed list.`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-}));
+//     if (allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       console.error(`[CORS Blocked] The origin "${origin}" is not in the allowed list.`);
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   credentials: true,
+// }));
 
 app.use(express.json());
 
