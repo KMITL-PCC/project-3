@@ -19,17 +19,26 @@ const authController = {
             // console.log(`[Login API] Login successful for ${studentId}, setting session...`);
 
             // บันทึกข้อมูลลงใน Session (เก็บใน Redis)
-            (req.session as any).userId = user.id;
-            (req.session as any).studentId = user.studentId;
-            (req.session as any).role = user.role;
-            (req.session as any).roleId = user.roleId;
-            (req.session as any).fname = user.fname;
-            (req.session as any).lname = user.lname;
-            (req.session as any).room = room;
+            const sessionData = req.session as any;
+            sessionData.userId = user.id;
+            sessionData.studentId = user.studentId;
+            sessionData.role = user.role;
+            sessionData.roleId = user.roleId;
+            sessionData.fname = user.fname;
+            sessionData.lname = user.lname;
+            sessionData.room = room;
 
-            res.status(200).json({
-                message: 'Login successful',
-                user,
+            console.log('[Login API] Session data before save:', req.session);
+
+            req.session.save((err: unknown) => {
+                if (err) {
+                    console.error('[Login API] Failed to save session:', err);
+                    return res.status(500).json({ message: 'Internal Server Error' });
+                }
+                res.status(200).json({
+                    message: 'Login successful',
+                    user,
+                });
             });
         } catch (error: any) {
             console.error('Login Error:', error);
