@@ -23,8 +23,8 @@ const authService = {
 
     // Simple password check (for development/testing)
     if (user.password !== password) {
-       console.log(`[AuthService] Password mismatch for ${studentId}`);
-       throw new Error('Invalid credentials');
+      console.log(`[AuthService] Password mismatch for ${studentId}`);
+      throw new Error('Invalid credentials');
     }
 
     return {
@@ -37,6 +37,21 @@ const authService = {
       // major: user.major?.name || null,
       message: "Login successful",
     };
+  },
+
+  guestLogin: async (room: string) => {
+
+    const guestUser = await prisma.user.findUnique({
+      where: {
+        fname: 'Guest',
+      },
+      select: {
+        StudentId: true,
+      }
+    });
+
+    return guestUser;
+
   },
 
   register: (_data: any) => {

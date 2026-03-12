@@ -19,12 +19,13 @@ const authController = {
             // console.log(`[Login API] Login successful for ${studentId}, setting session...`);
 
             // บันทึกข้อมูลลงใน Session (เก็บใน Redis)
-            (req.session as any).userId    = user.id;
+            (req.session as any).userId = user.id;
             (req.session as any).studentId = user.studentId;
-            (req.session as any).role      = user.role;
-            (req.session as any).roleId    = user.roleId;
-            (req.session as any).fname     = user.fname;
-            (req.session as any).lname     = user.lname;
+            (req.session as any).role = user.role;
+            (req.session as any).roleId = user.roleId;
+            (req.session as any).fname = user.fname;
+            (req.session as any).lname = user.lname;
+            (req.session as any).room = room;
 
             res.status(200).json({
                 message: 'Login successful',
@@ -33,10 +34,31 @@ const authController = {
         } catch (error: any) {
             console.error('Login Error:', error);
             const isReject = error.message?.toLowerCase().includes('reject') ||
-                             error.message?.toLowerCase().includes('invalid credentials');
+                error.message?.toLowerCase().includes('invalid credentials');
             res.status(isReject ? 401 : 500).json({
                 message: error.message || 'Internal Server Error',
             });
+        }
+    },
+
+    handleGuestLogin: async (req: Request, res: Response) => {
+        try {
+            const { room } = req.body;
+
+            if (!room) {
+                res.status(400).json({ message: 'Room is required for guest login' });
+                return;
+            }
+
+            const guestUser = await authService.guestLogin(room);
+            (req.session as any).room = room;
+            (req.session as any).studentId = guestUser.StudentId;
+
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                return res.status(500).json({ error: error.message });
+            }
+            return res.status(500).json({ error: String(error) });
         }
     },
 
