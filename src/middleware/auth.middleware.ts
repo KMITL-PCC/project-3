@@ -1,40 +1,22 @@
 import type { NextFunction, Request, Response } from "express";
 
-type User = {
-  id: number;
-  name: string;
-  role: "admin" | "user" | "guest";
-};
-
+/**
+ * authMiddleware — ตรวจสอบ session ว่า login อยู่หรือไม่
+ * ถ้าไม่มี session.userId → 401 Unauthorized
+ */
 const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  console.log("Auth middleware");
+  const session = req.session as any;
 
-  const user: User[] = [
-    {
-      id: 1,
-      name: "Somsri Rongrod",
-      role: "admin",
-    },
-    {
-      id: 2,
-      name: "Somsjai Bundai",
-      role: "user",
-    },
-    {
-      id: 3,
-      name: "Samak Samarn",
-      role: "guest",
-    },
-  ];
-
-  if (user[1].role === "admin" || user[1].role === "user") {
-    next();
-  } else {
-    res.status(403).json({
+  if (!session?.userId) {
+    res.status(401).json({
       success: false,
-      message: "Forbidden",
+      message: 'Unauthorized: No active session',
     });
+    return;
   }
+
+  console.log(`[Auth Middleware] userId=${session.userId} role=${session.role}`);
+  next();
 };
 
 export default authMiddleware;

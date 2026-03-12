@@ -10,8 +10,14 @@ function qrcodeRouter(router: express.Router) {
   qrRouter.post('/scan', qrcodeController.scanQrCode);
   // Poll for QR usage status
   qrRouter.get('/poll/:class_session_id', qrcodeController.pollSessionStatus);
-  // Perform Check-in/Out/Swap action
+  // Get current user status in a room
+  qrRouter.get('/status/:roomCode', qrcodeController.getUserStatus);
+  // Perform Check-in/Out/Swap action (QR based)
   qrRouter.post('/action', qrcodeController.actionQrCode);
+  // Perform Direct Check-in/Out/Swap action (No QR token)
+  qrRouter.post('/action/direct', qrcodeController.directAction);
+  // Ping/Heartbeat for token
+  qrRouter.post('/ping', qrcodeController.pingToken);
 
   router.use('/qrcode', qrRouter);
 }
