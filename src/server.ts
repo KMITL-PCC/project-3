@@ -13,7 +13,7 @@ const port: number = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
 // Handling '/' Request
 
-app.use(router);
+app.use("/", router);
 
 // Server setup
 app.listen(port, "0.0.0.0", () => {

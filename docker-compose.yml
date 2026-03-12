@@ -12,6 +12,9 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=${DATABASE_URL}
       - PORT=${PORT}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
       # รอทีม DataBase
       # เตรียมดึงจากไฟล์ .env
       # - DB_HOST=
