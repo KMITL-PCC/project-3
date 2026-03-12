@@ -8,7 +8,7 @@ import { redisClient } from './lib/redis';
 import rootRouter from './routes/router';
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port: number = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
 app.use((req, res, next) => {
   console.log(`[Express] Early Incoming ${req.method} request to ${req.originalUrl}`);
@@ -45,7 +45,7 @@ app.use(
 app.use('/api', rootRouter);
 
 // Server setup
-app.listen(port, () => {
+app.listen(port, "0.0.0.0", () => {
   console.log(`Server running at http://localhost:${port}/`);
   console.log(`Login:  POST http://localhost:${port}/api/auth/login`);
   console.log(`Me:     GET  http://localhost:${port}/api/auth/me`);

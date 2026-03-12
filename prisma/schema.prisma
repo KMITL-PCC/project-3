@@ -1,10 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
-
 generator client {
   provider = "prisma-client-js"
   output   = "./generated/"
@@ -38,7 +31,6 @@ model User {
   @@map("users")
 }
 
-// Model Zone (for grouping devices)
 model major {
   id       Int     @id @default(autoincrement())
   majorId  String  @unique @db.VarChar(20)
@@ -84,7 +76,6 @@ model Room {
   @@map("room")
 }
 
-// Model Ad
 model Ad {
   id        String   @id @default(uuid())
   name      String
@@ -95,7 +86,6 @@ model Ad {
   createdAt DateTime @default(now())
 }
 
-// Model Activity
 model Activity {
   id          String   @id @default(uuid())
   devices     Device[]
@@ -112,7 +102,6 @@ model Activity {
   updatedAt   DateTime @updatedAt
 }
 
-// Model AuditLog (for tracking changes)
 model AuditLog {
   id        Int      @id @default(autoincrement())
   userId    String
@@ -123,7 +112,6 @@ model AuditLog {
   createdAt DateTime @default(now())
 }
 
-// Model QrCode
 model QrCode {
   id          String   @id @default(uuid())
   name        String
@@ -134,7 +122,6 @@ model QrCode {
   activities  Activity[]
 }
 
-// Model Device
 model Device {
   id         String @id @default(uuid())
   macAddress String @unique
@@ -171,11 +158,8 @@ model ClassSession {
   endTime      DateTime @map("end_time")
   maxStudents  Int      @map("max_students")
 
-  // subject     Subject    @relation(fields: [subjectId], references: [id])
   room        Room       @relation(fields: [roomId], references: [roomCode])
   device      Device     @relation(fields: [deviceId], references: [id])
-
-  // attendances Attendance[]
 
   @@map("class_session")
 }
