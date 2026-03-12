@@ -31,6 +31,14 @@ Returns a simple status message confirming the dashboard route is reachable.
 Dashboard Route
 ```
 
+#### 💻 Frontend Usage
+```ts
+const checkHealth = async () => {
+  const res = await api.get('/dashboard');
+  console.log(res.data);
+};
+```
+
 ---
 
 ### 2. Get Attendance by Room Code
@@ -99,6 +107,16 @@ Returned when at least one attendance record is found.
     "totalPages": 3
   }
 }
+```
+
+#### 💻 Frontend Usage
+```ts
+const getAttendance = async (roomCode, date, page = 1) => {
+  const res = await api.get(`/dashboard/${roomCode}`, {
+    params: { date, page, limit: 10 }
+  });
+  return res.data; // { success, data, pagination }
+};
 ```
 
 ##### Response Fields

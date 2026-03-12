@@ -1,10 +1,13 @@
 import axios from 'axios';
 
 async function testSession() {
+  const PORT = process.env.PORT || 3000;
+  console.log('🚀 Testing Session on port:', PORT);
+  
   try {
-    const res = await axios.post('http://localhost:3000/api/auth/login', {
+    const res = await axios.post(`http://localhost:${PORT}/api/auth/login`, {
       studentId: 'admin',
-      password: 'hashed_password_admin'
+      password: '1234'
     });
     console.log('Login Result:', res.data);
     

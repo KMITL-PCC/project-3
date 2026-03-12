@@ -51,7 +51,10 @@ const qrcodeController = {
     try {
       // Fetch Class Session and Device/Room info
       const [session, device] = await Promise.all([
-        prisma.classSession.findUnique({ where: { id: parseInt(class_session_id) } }),
+        prisma.classSession.findUnique({
+          where: { id: parseInt(class_session_id) },
+          include: { room: true }
+        }),
         macAddress ? prisma.device.findUnique({
           where: { macAddress },
           include: { room: true }
@@ -62,6 +65,12 @@ const qrcodeController = {
         res.status(404).json({ error: 'Class session not found' });
         return;
       }
+
+      // Resolve roomCode: device room → session room → reject
+      const roomCode = (device && device.roomCode) ? device.roomCode : session.roomId;
+      const roomDesc = (device && device.room && device.room.roomDesc)
+        ? device.room.roomDesc
+        : (session.room?.roomDesc || null);
 
       // Generate a simple unique token
       const token = crypto.randomBytes(8).toString('hex');
@@ -74,8 +83,8 @@ const qrcodeController = {
         subject_id: session.subjectId,
         startTime: session.startTime,
         endTime: session.endTime,
-        roomCode: (device && device.roomCode) ? device.roomCode : 'Unknown',
-        roomDesc: (device && device.room && device.room.roomDesc) ? device.room.roomDesc : 'Unknown Location'
+        roomCode,
+        roomDesc: roomDesc || 'Unknown Location'
       });
 
       // 2. Update booth status (tracking if the current token on screen has been scanned)
@@ -98,8 +107,8 @@ const qrcodeController = {
         expires_in: QR_VALIDITY_MS / 1000,
         metadata: {
           subject_id: session.subjectId,
-          roomCode: device?.roomCode,
-          roomDesc: device?.room?.roomDesc
+          roomCode,
+          roomDesc
         }
       });
 

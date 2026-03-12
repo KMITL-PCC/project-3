@@ -1,4 +1,4 @@
-import { Prisma } from "../../prisma/generated/prisma/client";
+import { Prisma } from "../../prisma/generated/client";
 import { formatDate } from "../lib/format-date";
 import { prisma } from "../lib/prisma";
 

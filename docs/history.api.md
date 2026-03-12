@@ -66,6 +66,16 @@ Returned when at least one check-in record is found for the authenticated studen
 }
 ```
 
+#### 💻 Frontend Usage
+```ts
+const getMyHistory = async () => {
+  const res = await api.get('/history');
+  return res.data.data;
+};
+```
+
+---
+
 ##### Response Fields
 
 **`data[]` object**
