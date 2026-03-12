@@ -63,11 +63,15 @@ const authController = {
             (req.session as any).room = room;
             (req.session as any).studentId = guestUser.StudentId;
 
-            console.log("this room is ", req.session.room)
-
-            res.status(200).json({
-                message: 'Login successful',
-                user: guestUser,
+            req.session.save((err: unknown) => {
+                if (err) {
+                    console.error('[Login API] Failed to save session:', err);
+                    return res.status(500).json({ message: 'Internal Server Error' });
+                }
+                res.status(200).json({
+                    message: 'Login successful',
+                    user: guestUser,
+                });
             });
 
         } catch (error: unknown) {
