@@ -6,6 +6,7 @@ const historyController = {
 		try {
 			const session = req.session as any;
 			const studentId = session.studentId;
+			console.log(`[History Controller] Fetching history for studentId: ${studentId}`);
 
 			if (!studentId) {
 				return res.status(401).json({

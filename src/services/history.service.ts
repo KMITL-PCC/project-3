@@ -31,6 +31,8 @@ const historyService = {
 			};
 		});
 
+		console.log(`[History Service] Retrieved history for studentId ${studentId}:`, history);
+
 		return history;
 	},
 };
