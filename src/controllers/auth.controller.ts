@@ -108,6 +108,7 @@ const authController = {
     // 4. Handle Me -> ดูข้อมูล user จาก session ปัจจุบัน
     handleMe: async (req: Request, res: Response) => {
         const session = req.session as any;
+        console.log('[Me API] Session data:', session);
         if (!session.userId) {
             res.status(401).json({ message: 'Unauthorized: No active session' });
             return;
