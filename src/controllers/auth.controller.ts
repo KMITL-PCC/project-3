@@ -62,6 +62,8 @@ const authController = {
             const guestUser = await authService.guestLogin(room);
             (req.session as any).room = room;
             (req.session as any).studentId = guestUser.StudentId;
+            (req.session as any).roleId = guestUser.roleId;
+            (req.session as any).userId = guestUser.id;
 
             req.session.save((err: unknown) => {
                 if (err) {
@@ -108,14 +110,6 @@ const authController = {
     // 4. Handle Me -> ดูข้อมูล user จาก session ปัจจุบัน
     handleMe: async (req: Request, res: Response) => {
         const session = req.session as any;
-        console.log('[Me API] Session data:', session);
-        console.log('[Auth Guard] Raw Headers Cookie:', req.headers.cookie);
-
-        // 2. เช็คเบอร์ล็อกเกอร์ ว่าตรงกับที่ฝั่ง Frontend ถืออยู่ไหม?
-        console.log('[Auth Guard] Session ID:', req.sessionID);
-
-        // 3. เช็คว่าในล็อกเกอร์เบอร์นี้ มีข้อมูลเหลืออยู่ไหม?
-        console.log('[Auth Guard] Session Data:', session);
         if (!session.userId) {
             res.status(401).json({ message: 'Unauthorized: No active session' });
             return;
