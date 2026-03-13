@@ -17,12 +17,12 @@ const historyController = {
 
 			const history = await historyService.getAll(studentId);
 
-			if (!history || history.length === 0) {
-				return res.status(404).json({
-					success: false,
-					message: "No history found",
-				});
-			}
+			// if (!history || history.length === 0) {
+			// 	return res.status(404).json({
+			// 		success: false,
+			// 		message: "No history found",
+			// 	});
+			// }
 
 			res.status(200).json({
 				success: true,
