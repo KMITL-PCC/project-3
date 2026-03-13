@@ -56,6 +56,7 @@ const authService = {
       select: {
         StudentId: true,
         roleId: true,
+        id: true
       }
     });
     return guestUser;
